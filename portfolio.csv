@@ -1,9 +1,9 @@
-asset,type,symbol,quantity,buy_price_try
-Gram Altın,gold,GRAM_ALTIN,50.0,
-Dolar,fx,USDTRY,299.48,
-SPCX,us_stock,SPCX.US,0.47282,
-RKLB,us_stock,RKLB.US,0.3497952,
-ASELS,bist_stock,ASELS,5.0,
-ENJSA,bist_stock,ENJSA,2.0,
-SISE,bist_stock,SISE,2.0,
-ISCTR,bist_stock,ISCTR,1.0,
+name,symbol,category,quantity,cost_try,manual_price_try
+Gram Altın,GRAM_ALTIN,Altın,50,0,0
+Dolar,USDTRY,Döviz,299.48,0,0
+SPCX,SPCX.US,ABD Hisse,0.47282,0,0
+RKLB,RKLB.US,ABD Hisse,0.3497952,0,0
+ASELS,ASELS,BIST,5,0,0
+ENJSA,ENJSA,BIST,2,0,0
+SISE,SISE,BIST,2,0,0
+ISCTR,ISCTR,BIST,1,0,0
