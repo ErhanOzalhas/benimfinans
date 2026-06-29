@@ -1,322 +1,295 @@
 from __future__ import annotations
 
-import io
 import json
-import sqlite3
-from datetime import datetime, date
-from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 import plotly.express as px
-import requests
 import streamlit as st
 
+from database.db import (
+    add_alert,
+    add_asset,
+    add_snapshot,
+    add_transaction,
+    delete_asset,
+    init_db,
+    load_alerts,
+    load_assets,
+    load_snapshots,
+    load_transactions,
+    save_assets,
+)
+from reports.exporters import excel_bytes, pdf_bytes
+from services.prices import enrich_prices, format_try
+
+APP_VERSION = "V3.1"
 APP_TITLE = "Benim Finans"
-BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
-DB_PATH = DATA_DIR / "benimfinans.db"
-PORTFOLIO_CSV = BASE_DIR / "portfolio.csv"
+CATEGORY_OPTIONS = ["Altın", "Döviz", "BIST", "ABD Hisse", "Fon", "Kripto", "BES", "Diğer"]
 
-st.set_page_config(page_title=APP_TITLE, page_icon="💼", layout="wide")
+st.set_page_config(page_title=APP_TITLE, page_icon="💼", layout="wide", initial_sidebar_state="expanded")
 
-CUSTOM_CSS = """
+CSS = """
 <style>
-.block-container { padding-top: 1.2rem; padding-bottom: 3rem; }
-[data-testid="stMetricValue"] { font-size: 2rem; }
-.card {border:1px solid #e5e7eb; border-radius:18px; padding:18px; background:#fff; box-shadow:0 1px 8px rgba(15,23,42,.04);}
-.small-muted {color:#64748b; font-size:.85rem;}
+.block-container {padding-top: 1rem; padding-bottom: 4rem; max-width: 1180px;}
+[data-testid="stMetricValue"] {font-size: 1.85rem; font-weight: 800;}
+[data-testid="stSidebar"] {background: #0f172a;}
+[data-testid="stSidebar"] * {color: #f8fafc !important;}
+.bf-card {border: 1px solid #e5e7eb; border-radius: 18px; padding: 18px; background: #fff; box-shadow: 0 1px 10px rgba(15,23,42,.05); min-height: 105px;}
+.bf-card h4 {margin: 0 0 6px 0; font-size: .95rem; color: #64748b;}
+.bf-card .value {font-size: 1.45rem; font-weight: 800; color: #111827;}
+.bf-card .sub {font-size: .85rem; color: #64748b;}
+.good {color: #16a34a; font-weight: 700;}
+.bad {color: #dc2626; font-weight: 700;}
+.muted {color: #64748b; font-size: .9rem;}
 @media (max-width: 768px) {
-  [data-testid="column"] { width: 100% !important; flex: unset; }
-  [data-testid="stMetricValue"] { font-size: 1.55rem; }
+  [data-testid="column"] {width: 100% !important; flex: unset;}
+  [data-testid="stMetricValue"] {font-size: 1.45rem;}
+  .bf-card {margin-bottom: 10px;}
 }
 </style>
 """
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-
-CATEGORY_OPTIONS = ["Altın", "Döviz", "BIST", "ABD Hisse", "Fon", "Kripto", "Diğer"]
-CURRENCY_SYMBOLS = {"USDTRY": "Dolar", "EURTRY": "Euro", "GBPTRY": "Sterlin"}
+st.markdown(CSS, unsafe_allow_html=True)
 
 
-def db() -> sqlite3.Connection:
-    con = sqlite3.connect(DB_PATH)
-    con.row_factory = sqlite3.Row
-    return con
+def pct_text(x: float) -> str:
+    return f"{x:+.2f}%".replace(".", ",")
 
 
-def init_db() -> None:
-    con = db()
-    cur = con.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS assets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        category TEXT NOT NULL,
-        quantity REAL NOT NULL DEFAULT 0,
-        cost_try REAL NOT NULL DEFAULT 0,
-        manual_price_try REAL NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL
-    )
-    """)
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
-        asset TEXT NOT NULL,
-        action TEXT NOT NULL,
-        quantity REAL NOT NULL DEFAULT 0,
-        price_try REAL NOT NULL DEFAULT 0,
-        note TEXT DEFAULT ''
-    )
-    """)
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS snapshots (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ts TEXT NOT NULL,
-        total_try REAL NOT NULL
-    )
-    """)
-    con.commit()
-    # Seed once
-    count = cur.execute("SELECT COUNT(*) c FROM assets").fetchone()["c"]
-    if count == 0 and PORTFOLIO_CSV.exists():
-        df = pd.read_csv(PORTFOLIO_CSV)
-        now = datetime.now().isoformat(timespec="seconds")
-        for _, r in df.iterrows():
-            cur.execute(
-                "INSERT INTO assets(name,symbol,category,quantity,cost_try,manual_price_try,created_at) VALUES(?,?,?,?,?,?,?)",
-                (str(r["name"]), str(r["symbol"]), str(r["category"]), float(r["quantity"]), float(r.get("cost_try",0) or 0), float(r.get("manual_price_try",0) or 0), now),
-            )
-        con.commit()
-    con.close()
-
-
-def load_assets() -> pd.DataFrame:
-    con = db()
-    df = pd.read_sql_query("SELECT * FROM assets ORDER BY id", con)
-    con.close()
-    return df
-
-
-def save_assets(df: pd.DataFrame) -> None:
-    con = db()
-    cur = con.cursor()
-    cur.execute("DELETE FROM assets")
-    now = datetime.now().isoformat(timespec="seconds")
-    for _, r in df.iterrows():
-        cur.execute(
-            "INSERT INTO assets(id,name,symbol,category,quantity,cost_try,manual_price_try,created_at) VALUES(?,?,?,?,?,?,?,?)",
-            (int(r["id"]) if pd.notna(r.get("id")) else None, r["name"], r["symbol"], r["category"], float(r["quantity"]), float(r.get("cost_try",0) or 0), float(r.get("manual_price_try",0) or 0), r.get("created_at") or now),
-        )
-    con.commit(); con.close()
-
-
-def get_truncgil_rates() -> dict[str, float]:
-    # Unofficial public JSON. If it fails, manual/cache values are used.
-    out = {}
-    try:
-        r = requests.get("https://finans.truncgil.com/today.json", timeout=8)
-        data = r.json()
-        mapping = {"USDTRY": "ABD DOLARI", "EURTRY": "EURO", "GBPTRY": "İNGİLİZ STERLİNİ", "GRAM_ALTIN": "Gram Altın"}
-        for sym, key in mapping.items():
-            item = data.get(key) or {}
-            val = item.get("Satış") or item.get("Alış")
-            if val:
-                out[sym] = float(str(val).replace(".", "").replace(",", "."))
-    except Exception:
-        pass
-    return out
-
-
-def get_stooq_price(symbol: str, usd_try: float | None = None) -> float | None:
-    # Free CSV endpoint. Works for some US symbols; BIST coverage may vary.
-    candidates = []
-    s = symbol.upper().strip()
-    if s.endswith(".US"):
-        candidates.append(s.replace(".US", ".US").lower())
-        candidates.append(s.replace(".US", "").lower() + ".us")
-    elif s in ["RKLB", "SPCX"]:
-        candidates.append(s.lower() + ".us")
+def app_header(priced: pd.DataFrame, total: float) -> None:
+    st.title("💼 Benim Finans")
+    st.caption(f"{APP_VERSION} • Mobil uyumlu kişisel yatırım paneli • Yatırım tavsiyesi değildir.")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Toplam Portföy", format_try(total))
+    c2.metric("Varlık Sayısı", len(priced))
+    if not priced.empty and total > 0:
+        by_cat = priced.groupby("category", as_index=False)["total_try"].sum().sort_values("total_try", ascending=False)
+        c3.metric("En Büyük Kategori", by_cat.iloc[0]["category"])
     else:
-        candidates.append(s.lower() + ".tr")
-        candidates.append(s.lower() + ".is")
-    for c in candidates:
-        try:
-            url = f"https://stooq.com/q/l/?s={c}&f=sd2t2ohlcv&h&e=csv"
-            txt = requests.get(url, timeout=8).text
-            row = pd.read_csv(io.StringIO(txt)).iloc[0]
-            close = row.get("Close")
-            if close is not None and str(close) != "N/D":
-                price = float(close)
-                if c.endswith(".us") and usd_try:
-                    return price * usd_try
-                return price
-        except Exception:
-            continue
-    return None
+        c3.metric("En Büyük Kategori", "-")
+    c4.metric("Son Güncelleme", datetime.now().strftime("%H:%M"))
 
 
-def price_assets(df: pd.DataFrame) -> pd.DataFrame:
-    rates = get_truncgil_rates()
-    usd_try = rates.get("USDTRY") or None
-    rows = []
-    for _, r in df.iterrows():
-        price = None
-        note = ""
-        sym = str(r["symbol"]).upper().strip()
-        manual = float(r.get("manual_price_try", 0) or 0)
-        if sym in rates:
-            price = rates[sym]; note = "Online"
-        elif r["category"] in ["ABD Hisse", "BIST"]:
-            price = get_stooq_price(sym, usd_try=usd_try)
-            note = "Online" if price else "Online fiyat alınamadı"
-        if not price and manual > 0:
-            price = manual; note = "Manuel"
-        total = float(r["quantity"]) * price if price else 0
-        cost_total = float(r["quantity"]) * float(r.get("cost_try", 0) or 0)
-        pnl = total - cost_total if cost_total > 0 else 0
-        rows.append({**r.to_dict(), "price_try": price or 0, "total_try": total, "pnl_try": pnl, "source": note or "Fiyat yok"})
-    return pd.DataFrame(rows)
+def sidebar_menu() -> str:
+    st.sidebar.title("💼 Benim Finans")
+    st.sidebar.caption("Kişisel portföy sistemi")
+    return st.sidebar.radio(
+        "Menü",
+        ["🏠 Dashboard", "💰 Portföy", "➕ Varlık Ekle", "🧾 İşlemler", "📈 Grafikler", "🔔 Alarm", "📄 Raporlar", "⚙️ Ayarlar"],
+        label_visibility="collapsed",
+    )
 
 
-def format_try(x: float) -> str:
-    return f"{x:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+def dashboard(priced: pd.DataFrame, snapshots: pd.DataFrame, total: float) -> None:
+    st.subheader("🏠 Dashboard")
+    by_cat = priced.groupby("category", as_index=False)["total_try"].sum().sort_values("total_try", ascending=False)
 
+    cols = st.columns(4)
+    for i, cat in enumerate(CATEGORY_OPTIONS[:4]):
+        val = float(by_cat.loc[by_cat["category"] == cat, "total_try"].sum()) if not by_cat.empty else 0
+        share = (val / total * 100) if total > 0 else 0
+        cols[i].markdown(f"""
+        <div class='bf-card'>
+          <h4>{cat}</h4>
+          <div class='value'>{format_try(val)}</div>
+          <div class='sub'>Portföy payı: {share:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-def snapshot_total(total: float) -> None:
-    con = db(); cur = con.cursor()
-    cur.execute("INSERT INTO snapshots(ts,total_try) VALUES(?,?)", (datetime.now().isoformat(timespec="seconds"), float(total)))
-    con.commit(); con.close()
-
-
-def load_snapshots() -> pd.DataFrame:
-    con = db(); df = pd.read_sql_query("SELECT * FROM snapshots ORDER BY ts", con); con.close(); return df
-
-
-def add_transaction(asset: str, action: str, quantity: float, price_try: float, note: str) -> None:
-    con = db(); cur = con.cursor()
-    cur.execute("INSERT INTO transactions(date,asset,action,quantity,price_try,note) VALUES(?,?,?,?,?,?)", (date.today().isoformat(), asset, action, quantity, price_try, note))
-    # Apply to asset quantity for buy/sell
-    if action in ["Alış", "Satış"]:
-        sign = 1 if action == "Alış" else -1
-        cur.execute("UPDATE assets SET quantity = quantity + ? WHERE name = ? OR symbol = ?", (sign * quantity, asset, asset))
-    con.commit(); con.close()
-
-
-def load_transactions() -> pd.DataFrame:
-    con = db(); df = pd.read_sql_query("SELECT * FROM transactions ORDER BY id DESC", con); con.close(); return df
-
-
-init_db()
-assets = load_assets()
-priced = price_assets(assets)
-total = float(priced["total_try"].sum()) if not priced.empty else 0
-
-st.title("💼 Benim Finans")
-st.caption("Kişisel yatırım takip paneli. Yatırım tavsiyesi değildir.")
-
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Toplam Portföy", format_try(total))
-by_cat = priced.groupby("category", as_index=False)["total_try"].sum() if not priced.empty else pd.DataFrame()
-col2.metric("Varlık Sayısı", len(priced))
-col3.metric("En Büyük Kategori", by_cat.sort_values("total_try", ascending=False).iloc[0]["category"] if not by_cat.empty and by_cat["total_try"].sum() > 0 else "-")
-col4.metric("Son Güncelleme", datetime.now().strftime("%H:%M"))
-
-if st.button("💾 Bugünkü değeri kaydet", use_container_width=True):
-    snapshot_total(total)
-    st.success("Bugünkü portföy değeri kaydedildi.")
-
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🏠 Ana Sayfa", "💰 Portföy", "➕ Varlık Ekle", "🧾 İşlemler", "📈 Grafikler", "📄 Raporlar"])
-
-with tab1:
-    c1, c2 = st.columns([1,1])
-    with c1:
-        st.subheader("Kategori özeti")
-        if not by_cat.empty and by_cat["total_try"].sum() > 0:
-            by_cat["Toplam"] = by_cat["total_try"].apply(format_try)
-            st.dataframe(by_cat[["category", "Toplam"]].rename(columns={"category":"Kategori"}), use_container_width=True, hide_index=True)
-        else:
-            st.info("Fiyat verileri geldikçe kategori özeti oluşacak.")
-    with c2:
-        st.subheader("Portföy dağılımı")
-        if not by_cat.empty and by_cat["total_try"].sum() > 0:
-            fig = px.pie(by_cat, values="total_try", names="category", hole=.45)
+    left, right = st.columns([1.15, .85])
+    with left:
+        st.markdown("### Portföy dağılımı")
+        positive = by_cat[by_cat["total_try"] > 0]
+        if not positive.empty:
+            fig = px.pie(positive, names="category", values="total_try", hole=.45)
+            fig.update_layout(height=360, margin=dict(l=5, r=5, t=20, b=5), legend_title_text="Kategori")
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("Dağılım grafiği için fiyat bilgisi gerekli.")
+            st.info("Fiyatlar geldikçe portföy dağılım grafiği oluşacak. Şimdilik manuel fiyat girebilirsin.")
+    with right:
+        st.markdown("### Öne çıkanlar")
+        tmp = priced.copy()
+        if not tmp.empty and tmp["total_try"].sum() > 0:
+            top = tmp.sort_values("total_try", ascending=False).iloc[0]
+            st.success(f"En büyük varlık: {top['name']} — {format_try(top['total_try'])}")
+            if (tmp["pnl_try"].abs().sum() > 0):
+                gain = tmp.sort_values("pnl_try", ascending=False).iloc[0]
+                loss = tmp.sort_values("pnl_try", ascending=True).iloc[0]
+                st.info(f"En çok kazandıran: {gain['name']} — {format_try(gain['pnl_try'])}")
+                st.warning(f"En çok kaybettiren: {loss['name']} — {format_try(loss['pnl_try'])}")
+        else:
+            st.info("Manuel fiyat veya online fiyat gelince özet oluşacak.")
 
-with tab2:
-    st.subheader("Portföy düzenle")
-    edit = priced[["id","name","symbol","category","quantity","cost_try","manual_price_try","price_try","total_try","source"]].copy()
-    edit = edit.rename(columns={"name":"Varlık","symbol":"Sembol","category":"Kategori","quantity":"Adet/Gram","cost_try":"Alış Maliyeti TL","manual_price_try":"Manuel Fiyat TL","price_try":"Güncel Fiyat TL","total_try":"Toplam TL","source":"Kaynak"})
-    st.caption("Adet, kategori, alış maliyeti ve manuel fiyatı burada değiştirebilirsin. Online fiyat gelmezse manuel fiyat kullanılır.")
-    edited = st.data_editor(edit, use_container_width=True, num_rows="dynamic", key="asset_editor", disabled=["Güncel Fiyat TL","Toplam TL","Kaynak"])
-    if st.button("Portföy değişikliklerini kaydet", type="primary"):
-        save = edited.rename(columns={"Varlık":"name","Sembol":"symbol","Kategori":"category","Adet/Gram":"quantity","Alış Maliyeti TL":"cost_try","Manuel Fiyat TL":"manual_price_try"})
-        keep = ["id","name","symbol","category","quantity","cost_try","manual_price_try"]
-        old = load_assets()[["id","created_at"]]
-        save = save[keep].merge(old, on="id", how="left")
-        save_assets(save)
-        st.success("Portföy kaydedildi. Sayfayı yenileyebilirsin.")
+        if st.button("💾 Bugünkü değeri kaydet", use_container_width=True):
+            details = priced[["name", "symbol", "category", "quantity", "price_try", "total_try"]].to_json(orient="records", force_ascii=False)
+            add_snapshot(total, details)
+            st.success("Bugünkü değer kaydedildi.")
+
+    st.markdown("### Varlıklar")
+    view = priced[["name", "category", "quantity", "price_try", "total_try", "pnl_try", "source"]].copy()
+    view.columns = ["Varlık", "Kategori", "Adet/Gram", "Fiyat TL", "Toplam TL", "K/Z TL", "Kaynak"]
+    st.dataframe(view, use_container_width=True, hide_index=True)
+
+
+def portfolio_page(priced: pd.DataFrame) -> None:
+    st.subheader("💰 Portföy")
+    st.caption("Miktar, kategori, alış maliyeti ve manuel fiyatı buradan değiştirebilirsin.")
+    editable = priced[["id", "name", "symbol", "category", "quantity", "cost_try", "manual_price_try"]].copy()
+    edited = st.data_editor(
+        editable,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "id": st.column_config.NumberColumn("ID", disabled=True),
+            "name": st.column_config.TextColumn("Varlık"),
+            "symbol": st.column_config.TextColumn("Sembol"),
+            "category": st.column_config.SelectboxColumn("Kategori", options=CATEGORY_OPTIONS),
+            "quantity": st.column_config.NumberColumn("Adet/Gram", step=0.0001, format="%.6f"),
+            "cost_try": st.column_config.NumberColumn("Alış Maliyeti TL", step=0.01, format="%.2f"),
+            "manual_price_try": st.column_config.NumberColumn("Manuel Fiyat TL", step=0.01, format="%.2f"),
+        },
+        num_rows="dynamic",
+    )
+    c1, c2 = st.columns([1, 1])
+    if c1.button("💾 Portföy değişikliklerini kaydet", use_container_width=True):
+        save_assets(edited)
+        st.success("Portföy kaydedildi. Sayfa yenileniyor...")
         st.rerun()
+    with c2.expander("🗑️ Varlık sil"):
+        ids = priced["id"].tolist()
+        sel = st.selectbox("Silinecek ID", ids) if ids else None
+        if st.button("Seçili varlığı sil") and sel:
+            delete_asset(int(sel)); st.success("Silindi."); st.rerun()
 
-with tab3:
-    st.subheader("Yeni varlık ekle")
-    with st.form("new_asset"):
-        name = st.text_input("Varlık adı", placeholder="Örn: Euro, Akbank, Apple")
-        symbol = st.text_input("Sembol", placeholder="Örn: EURTRY, AKBNK, AAPL.US")
-        category = st.selectbox("Kategori", CATEGORY_OPTIONS)
-        quantity = st.number_input("Adet/Gram", min_value=0.0, step=0.01, format="%.8f")
-        cost_try = st.number_input("Alış maliyeti TL", min_value=0.0, step=0.01)
-        manual_price = st.number_input("Manuel fiyat TL", min_value=0.0, step=0.01)
-        ok = st.form_submit_button("Varlığı ekle")
-    if ok and name and symbol:
-        con = db(); cur = con.cursor()
-        cur.execute("INSERT INTO assets(name,symbol,category,quantity,cost_try,manual_price_try,created_at) VALUES(?,?,?,?,?,?,?)", (name, symbol.upper(), category, quantity, cost_try, manual_price, datetime.now().isoformat(timespec="seconds")))
-        con.commit(); con.close()
-        st.success("Yeni varlık eklendi.")
-        st.rerun()
+    st.markdown("### Kategorilere göre görünüm")
+    for cat, g in priced.groupby("category"):
+        with st.expander(f"{cat} — {format_try(float(g['total_try'].sum()))}", expanded=False):
+            st.dataframe(g[["name", "symbol", "quantity", "price_try", "total_try", "source"]], use_container_width=True, hide_index=True)
 
-with tab4:
-    st.subheader("İşlem geçmişi")
-    asset_names = list(load_assets()["name"]) + list(load_assets()["symbol"])
-    with st.form("tx"):
-        asset = st.selectbox("Varlık", asset_names)
-        action = st.selectbox("İşlem", ["Alış", "Satış", "Temettü", "Komisyon", "Not"])
-        qty = st.number_input("Miktar", min_value=0.0, step=0.01, format="%.8f")
-        p = st.number_input("Fiyat TL", min_value=0.0, step=0.01)
+
+def add_asset_page() -> None:
+    st.subheader("➕ Varlık Ekle")
+    with st.form("asset_form", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        name = c1.text_input("Varlık adı", placeholder="Euro, THYAO, Apple, Bitcoin...")
+        symbol = c2.text_input("Sembol", placeholder="EURTRY, THYAO, AAPL.US, BTC...")
+        category = c1.selectbox("Kategori", CATEGORY_OPTIONS)
+        quantity = c2.number_input("Adet / gram", min_value=0.0, step=0.0001, format="%.6f")
+        cost = c1.number_input("Alış maliyeti TL", min_value=0.0, step=0.01)
+        manual = c2.number_input("Manuel fiyat TL", min_value=0.0, step=0.01)
+        submitted = st.form_submit_button("Varlığı ekle", use_container_width=True)
+        if submitted:
+            if not name or not symbol:
+                st.error("Varlık adı ve sembol gerekli.")
+            else:
+                add_asset(name, symbol, category, quantity, cost, manual)
+                st.success("Varlık eklendi.")
+                st.rerun()
+    st.info("Örnekler: EURTRY, GBPTRY, THYAO, ASELS, AAPL.US, MSFT.US. Online fiyat gelmezse manuel fiyat kullanılır.")
+
+
+def transactions_page(priced: pd.DataFrame) -> None:
+    st.subheader("🧾 İşlemler")
+    names = sorted(set(priced["name"].tolist() + priced["symbol"].tolist())) if not priced.empty else []
+    with st.form("tx_form", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        asset = c1.selectbox("Varlık", names) if names else c1.text_input("Varlık")
+        action = c2.selectbox("İşlem", ["Alış", "Satış", "Temettü", "Komisyon", "Nakit"])
+        quantity = c1.number_input("Miktar", min_value=0.0, step=0.0001, format="%.6f")
+        price = c2.number_input("Fiyat TL", min_value=0.0, step=0.01)
         note = st.text_input("Not")
-        submitted = st.form_submit_button("İşlemi kaydet")
-    if submitted:
-        add_transaction(asset, action, qty, p, note)
-        st.success("İşlem kaydedildi.")
-        st.rerun()
+        if st.form_submit_button("İşlemi kaydet", use_container_width=True):
+            add_transaction(asset, action, quantity, price, note)
+            st.success("İşlem kaydedildi ve portföye yansıtıldı.")
+            st.rerun()
     tx = load_transactions()
+    st.markdown("### İşlem geçmişi")
     st.dataframe(tx, use_container_width=True, hide_index=True)
 
-with tab5:
-    st.subheader("Portföy geçmişi")
-    hist = load_snapshots()
-    if not hist.empty:
-        hist["ts"] = pd.to_datetime(hist["ts"])
-        fig = px.line(hist, x="ts", y="total_try", markers=True, labels={"ts":"Tarih", "total_try":"Toplam TL"})
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Grafik için önce 'Bugünkü değeri kaydet' butonuna bas.")
 
-with tab6:
-    st.subheader("Raporlar")
-    export_df = priced.copy()
-    export_df["price_try"] = export_df["price_try"].round(2)
-    export_df["total_try"] = export_df["total_try"].round(2)
-    buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-        export_df.to_excel(writer, sheet_name="Portfoy", index=False)
-        load_transactions().to_excel(writer, sheet_name="Islemler", index=False)
-        load_snapshots().to_excel(writer, sheet_name="Gecmis", index=False)
-    st.download_button("📥 Excel indir", data=buf.getvalue(), file_name="benimfinans_rapor.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    st.caption("PDF raporu V3.1'de daha şık tasarımla eklenecek.")
+def charts_page(priced: pd.DataFrame, snapshots: pd.DataFrame) -> None:
+    st.subheader("📈 Grafikler")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("#### Kategori dağılımı")
+        by_cat = priced.groupby("category", as_index=False)["total_try"].sum()
+        by_cat = by_cat[by_cat["total_try"] > 0]
+        if not by_cat.empty:
+            st.plotly_chart(px.bar(by_cat, x="category", y="total_try", text_auto=".2s"), use_container_width=True)
+        else:
+            st.info("Grafik için fiyat verisi gerekli.")
+    with c2:
+        st.markdown("#### Portföy geçmişi")
+        if not snapshots.empty:
+            snapshots["ts"] = pd.to_datetime(snapshots["ts"])
+            st.plotly_chart(px.line(snapshots, x="ts", y="total_try", markers=True), use_container_width=True)
+        else:
+            st.info("Dashboard'daki 'Bugünkü değeri kaydet' butonuyla geçmiş oluşur.")
 
-st.divider()
-st.caption("V3.0 • Mobil uyumlu kişisel portföy paneli • Online fiyat alınamazsa manuel fiyat kullanılır.")
+
+def alerts_page(priced: pd.DataFrame) -> None:
+    st.subheader("🔔 Alarm")
+    names = sorted(set(priced["name"].tolist() + priced["symbol"].tolist())) if not priced.empty else []
+    with st.form("alert_form", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        asset = c1.selectbox("Varlık", names) if names else c1.text_input("Varlık")
+        op = c2.selectbox("Koşul", [">=", "<="])
+        target = c3.number_input("Hedef fiyat TL", min_value=0.0, step=0.01)
+        if st.form_submit_button("Alarm ekle", use_container_width=True):
+            add_alert(asset, op, target)
+            st.success("Alarm eklendi. Bu sürümde alarm listesi hazırlanır; bildirim V3.2'de Telegram/e-posta ile bağlanacak.")
+    alerts = load_alerts()
+    st.dataframe(alerts, use_container_width=True, hide_index=True)
+
+
+def reports_page(priced: pd.DataFrame, transactions: pd.DataFrame, snapshots: pd.DataFrame, total: float) -> None:
+    st.subheader("📄 Raporlar")
+    c1, c2 = st.columns(2)
+    c1.download_button("📥 Excel indir", data=excel_bytes(priced, transactions, snapshots), file_name="benimfinans_rapor.xlsx", use_container_width=True)
+    c2.download_button("📄 PDF indir", data=pdf_bytes(total, priced), file_name="benimfinans_rapor.pdf", mime="application/pdf", use_container_width=True)
+    st.caption("PDF Türkçe karakterleri sadeleştirilmiş yazabilir; V3.2'de daha gelişmiş PDF tasarımı eklenecek.")
+
+
+def settings_page() -> None:
+    st.subheader("⚙️ Ayarlar")
+    st.info("Online sürümde Streamlit Cloud dosya sistemi kalıcı veritabanı için sınırlıdır. Verileri önemli gördüğünde Excel raporu indirmeni öneririm. Kalıcı bulut veritabanı V3.2/V3.3 aşamasında eklenebilir.")
+    if st.button("🔄 Online fiyat önbelleğini temizle"):
+        st.cache_data.clear()
+        st.success("Önbellek temizlendi.")
+        st.rerun()
+
+
+def main() -> None:
+    init_db()
+    assets = load_assets()
+    priced = enrich_prices(assets)
+    total = float(priced["total_try"].sum()) if not priced.empty else 0
+    snapshots = load_snapshots()
+    transactions = load_transactions()
+
+    menu = sidebar_menu()
+    app_header(priced, total)
+
+    if menu == "🏠 Dashboard":
+        dashboard(priced, snapshots, total)
+    elif menu == "💰 Portföy":
+        portfolio_page(priced)
+    elif menu == "➕ Varlık Ekle":
+        add_asset_page()
+    elif menu == "🧾 İşlemler":
+        transactions_page(priced)
+    elif menu == "📈 Grafikler":
+        charts_page(priced, snapshots)
+    elif menu == "🔔 Alarm":
+        alerts_page(priced)
+    elif menu == "📄 Raporlar":
+        reports_page(priced, transactions, snapshots, total)
+    elif menu == "⚙️ Ayarlar":
+        settings_page()
+
+    st.divider()
+    st.caption(f"{APP_VERSION} • Benim Finans • Online fiyat gelmezse manuel fiyat kullanılır.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,8 +1,21 @@
-# Benim Finans V3
+# Benim Finans V3.1
 
-Kişisel yatırım paneli: portföy yönetimi, kategori özeti, işlem geçmişi, grafikler, Excel/PDF raporu ve mobil uyumlu Streamlit arayüzü.
+Mobil uyumlu kişisel yatırım takip paneli.
+
+## Özellikler
+
+- Dashboard kartları
+- Kategori bazlı özetler
+- Portföy düzenleme
+- Yeni varlık ekleme
+- İşlem geçmişi
+- Portföy geçmiş grafiği
+- Alarm listesi
+- Excel ve PDF raporu
+- Çoklu/veri-yedekli fiyat servisi + manuel fiyat desteği
 
 ## Yerel çalıştırma
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -11,6 +24,9 @@ streamlit run app.py
 ```
 
 ## Streamlit Cloud
-Repository: `ErhanOzalhas/benimfinans`
-Branch: `main`
-Main file path: `app.py`
+
+- Repository: `ErhanOzalhas/benimfinans`
+- Branch: `main`
+- Main file path: `app.py`
+
+> Not: Streamlit Cloud dosya sistemi kalıcı veritabanı için sınırlıdır. Kritik verileri düzenli Excel olarak dışa aktar.
