@@ -1,16 +1,17 @@
-# Benim Finans V4.0 — Portföy Motoru
+# Benim Finans V5.0 — MyFin
 
-Bu sürümde portföy CSV yerine SQLite tabanlı işlem motoruyla çalışır.
+Profesyonel portföy motoru + mobil/PWA hazırlığı.
 
-## Yenilikler
-- Geçmiş tarihli alış/satış girişi
-- Yeni varlık eklerken alış tarihi, alış fiyatı, komisyon ve not
-- İşlem geçmişinden portföy üretimi
-- Ortalama maliyet
-- Gerçekleşmiş ve gerçekleşmemiş kar/zarar
-- Varlık ve kategori bazında kar/zarar
-- Tarih aralığına göre işlem ve kar/zarar analizi
-- Mevcut CSV portföyden otomatik ilk aktarım
+## Öne çıkanlar
+- SQLite tabanlı işlem motoru
+- Geçmiş tarihli alış/satış, temettü, komisyon
+- Yeni varlık eklerken alış tarihi ve maliyet bilgisi
+- Varlık bazında tek tek silme / arşivleme
+- Tüm portföyü temizleme
+- Ortalama maliyet, gerçekleşmiş ve gerçekleşmemiş K/Z
+- Kategori ve seçilen tarih aralığı analizi
+- Mobil uyumlu MyFin tasarım
+- PWA hazırlığı: logo, manifest, tema rengi
 
 ## Çalıştırma
 ```bash
@@ -18,4 +19,11 @@ cd ~/Downloads/yatirim_paneli_v2_3
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 python3 -m streamlit run app.py
+```
+
+## Yayınlama
+```bash
+git add .
+git commit -m "V5.0 MyFin portfoy motoru ve PWA"
+git push
 ```

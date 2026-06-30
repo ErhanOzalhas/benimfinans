@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#0F172A"/>
+  <circle cx="256" cy="256" r="174" fill="#13213A" stroke="#22C55E" stroke-width="12"/>
+  <path d="M145 332L214 263L260 309L372 181" stroke="#38BDF8" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M314 181H372V239" stroke="#38BDF8" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="64" font-weight="800" fill="#F8FAFC">MyFin</text>
+  <text x="256" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="76" font-weight="900" fill="#22C55E">₺</text>
+</svg>
