@@ -505,6 +505,20 @@ elif page=='⚙️ Ayarlar':
     with tab_tehlike:
         st.subheader('🧹 Tüm veriyi sıfırla')
         st.warning('Bu işlem portföyü, işlemleri ve fiyat önbelleğini siler. Supabase kullanıyorsan canlı veriyi etkiler.')
-        confirm=st.checkbox('Tüm portföyü, işlemleri ve fiyat önbelleğini silmeyi onaylıyorum')
-        if st.button('🗑️ Tüm portföyü temizle', type='primary', disabled=not confirm):
-            clear_all_data(); st.success('Portföy tamamen temizlendi.'); st.rerun()
+
+        admin_password = st.text_input(
+            'Admin şifresi',
+            type='password',
+            placeholder='Admin şifresini gir',
+            help='Güvenlik için toplu temizlik işlemlerinde admin şifresi gerekir.'
+        )
+        confirm = st.checkbox('Tüm portföyü, işlemleri ve fiyat önbelleğini silmeyi onaylıyorum')
+        password_ok = admin_password == 'benimfinansadmin2026'
+
+        if admin_password and not password_ok:
+            st.error('Admin şifresi hatalı.')
+
+        if st.button('🗑️ Tüm portföyü temizle', type='primary', disabled=not (confirm and password_ok)):
+            clear_all_data()
+            st.success('Portföy tamamen temizlendi.')
+            st.rerun()
