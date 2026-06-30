@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 import pandas as pd
 from database.db import assets_df, transactions_df, price_cache_df
 
