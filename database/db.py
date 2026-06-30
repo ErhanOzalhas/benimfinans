@@ -27,12 +27,12 @@ def _get_secret(name: str, default: str = '') -> str:
 
 
 def using_supabase() -> bool:
-    return bool(_get_secret('SUPABASE_URL') and _get_secret('SUPABASE_KEY'))
+    return bool(_get_secret('SUPABASE_URL') and (_get_secret('SUPABASE_ANON_KEY') or _get_secret('SUPABASE_KEY')))
 
 
 def _supabase_client():
     from supabase import create_client
-    return create_client(_get_secret('SUPABASE_URL'), _get_secret('SUPABASE_KEY'))
+    return create_client(_get_secret('SUPABASE_URL'), _get_secret('SUPABASE_ANON_KEY') or _get_secret('SUPABASE_KEY'))
 
 
 def backend_name() -> str:
@@ -271,3 +271,39 @@ def clear_all_data():
     cur.execute('DELETE FROM assets')
     cur.execute("DELETE FROM sqlite_sequence WHERE name IN ('assets','transactions')")
     con.commit(); con.close()
+
+
+# ------------------------------------------------------------
+# Daily snapshots — portfolio history
+# ------------------------------------------------------------
+def save_snapshot(total_value_try: float, total_pl_try: float = 0, note: str = ''):
+    today = str(date.today())
+    row = {'snapshot_date': today, 'total_value_try': float(total_value_try or 0), 'total_pl_try': float(total_pl_try or 0), 'note': note or ''}
+    if using_supabase():
+        _supabase_client().table('daily_snapshots').upsert(row, on_conflict='snapshot_date').execute(); return
+    con = connect()
+    con.execute("""CREATE TABLE IF NOT EXISTS daily_snapshots (
+        snapshot_date TEXT PRIMARY KEY,
+        total_value_try REAL DEFAULT 0,
+        total_pl_try REAL DEFAULT 0,
+        note TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+    con.execute('INSERT OR REPLACE INTO daily_snapshots(snapshot_date,total_value_try,total_pl_try,note) VALUES(?,?,?,?)',
+                (row['snapshot_date'], row['total_value_try'], row['total_pl_try'], row['note']))
+    con.commit(); con.close()
+
+
+def snapshots_df():
+    if using_supabase():
+        res = _supabase_client().table('daily_snapshots').select('*').order('snapshot_date').execute()
+        return pd.DataFrame(res.data or [])
+    con = connect()
+    con.execute("""CREATE TABLE IF NOT EXISTS daily_snapshots (
+        snapshot_date TEXT PRIMARY KEY,
+        total_value_try REAL DEFAULT 0,
+        total_pl_try REAL DEFAULT 0,
+        note TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+    df = pd.read_sql_query('SELECT * FROM daily_snapshots ORDER BY snapshot_date', con); con.close(); return df
