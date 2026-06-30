@@ -190,48 +190,25 @@ elif page=='➕ Yeni Varlık':
         return e
 
     with st.form('new_asset'):
-        kategori = st.selectbox(
-            'Kategori',
-            ['Altın', 'Döviz', 'BIST Hisse', 'ABD Hisse', 'Kripto', 'Fon', 'BES', 'Diğer']
-        )
+        c1, c2 = st.columns(2)
+        with c1:
+            kategori = st.selectbox('Kategori',['Altın','Döviz','BIST Hisse','ABD Hisse','Kripto','Fon','BES','Diğer'])
+        with c2:
+            emtia = st.text_input('Emtia / Varlık',placeholder='Gram Altın, Dolar, Euro, ASELS, RKLB')
 
-        emtia = st.text_input(
-            'Emtia / Varlık',
-            placeholder='Gram Altın, Dolar, Euro, ASELS, RKLB'
-        )
+        c3, c4, c5 = st.columns(3)
+        with c3:
+            alis_tarihi = st.date_input('Alış tarihi', value=date.today())
+        with c4:
+            adet = st.number_input('Adet / Gram',min_value=0.0,value=0.0,step=0.01,format='%.6f')
+        with c5:
+            alis_fiyati = st.number_input('Alış fiyatı TL',min_value=0.0,value=0.0,step=0.01)
 
-        alis_tarihi = st.date_input('Alış tarihi', value=date.today())
-
-        adet = st.number_input(
-            'Adet / Gram',
-            min_value=0.0,
-            value=0.0,
-            step=0.01,
-            format='%.6f'
-        )
-
-        alis_fiyati = st.number_input(
-            'Alış fiyatı TL',
-            min_value=0.0,
-            value=0.0,
-            step=0.01
-        )
-
-        komisyon = st.number_input(
-            'Komisyon TL',
-            min_value=0.0,
-            value=0.0,
-            step=0.01,
-            help='Alış işleminde maliyete eklenir. Satış işleminde satış gelirinden düşülür.'
-        )
-
-        manuel_fiyat = st.number_input(
-            'Manuel güncel fiyat TL',
-            min_value=0.0,
-            value=0.0,
-            step=0.01,
-            help='Otomatik fiyat gelmezse yedek olarak kullanılır.'
-        )
+        c6, c7 = st.columns(2)
+        with c6:
+            komisyon = st.number_input('Komisyon TL',min_value=0.0,value=0.0,step=0.01)
+        with c7:
+            manuel_fiyat = st.number_input('Manuel güncel fiyat TL',min_value=0.0,value=0.0,step=0.01)
 
         not_alani = st.text_input('Not')
 
