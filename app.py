@@ -8,7 +8,7 @@ import plotly.express as px
 
 from database.db import (
     init_db, add_asset, update_asset, assets_df, transactions_df, add_transaction,
-    delete_transaction, clear_all_data, archive_asset, restore_asset, delete_asset
+    delete_transaction, clear_all_data, archive_asset, restore_asset, delete_asset, backend_name, using_supabase
 )
 from services.prices import refresh_all_prices
 from services.portfolio_engine import build_portfolio, category_summary, date_range_analysis
@@ -61,7 +61,7 @@ inject_branding(); init_db()
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V5.0')
+    st.caption('MyFin • V6.0 Cloud DB')
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlemler','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
@@ -82,7 +82,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin</div>
+  <div class='title'>Benim Finans • MyFin • V6 Cloud</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -237,8 +237,11 @@ elif page=='🧾 Raporlar':
 
 elif page=='⚙️ Ayarlar':
     st.header('⚙️ Ayarlar')
-    st.info('V5.0 MyFin: SQLite işlem motoru + mobil/PWA hazırlığı. Veritabanı: data/benimfinans.db')
-    st.warning('Streamlit Cloud dosya sistemi kalıcı veritabanı için sınırlıdır. Uzun vadede Supabase/Postgres bağlantısı ekleyeceğiz.')
+    st.info(f'Veri altyapısı: {backend_name()}')
+    if using_supabase():
+        st.success('Supabase aktif: Telefondan veya bilgisayardan yapılan değişiklikler bulutta kalıcı saklanır.')
+    else:
+        st.warning('Supabase secrets bulunamadı. Yerel geliştirme için SQLite kullanılıyor. Online kalıcı kullanım için Streamlit Secrets içine SUPABASE_URL ve SUPABASE_KEY ekle.')
     st.subheader('🧹 Tüm veriyi sıfırla')
     confirm=st.checkbox('Tüm portföyü, işlemleri ve fiyat önbelleğini silmeyi onaylıyorum')
     if st.button('🗑️ Tüm portföyü temizle', type='primary', disabled=not confirm):
