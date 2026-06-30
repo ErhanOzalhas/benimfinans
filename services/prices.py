@@ -90,6 +90,8 @@ def get_price_try(symbol, category='', manual_price=0):
             if manual_price and float(manual_price)>0:
                 return float(manual_price), 'Manuel fiyat'
             cache=price_cache_df()
+            if cache is None or cache.empty or 'symbol' not in cache.columns:
+                return manual_price or 0
             row=cache[cache['symbol']==symbol]
             if not row.empty:
                 return float(row.iloc[0]['price_try']), 'Cache'
