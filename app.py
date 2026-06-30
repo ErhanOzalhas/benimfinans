@@ -79,14 +79,6 @@ def money_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     if 'Getiri %' in out.columns: out['Getiri %']=out['Getiri %'].map(pct)
     return out
 
-
-def friendly_labels(df: pd.DataFrame) -> pd.DataFrame:
-    return df.rename(columns={
-        'Gerçekleşmiş K/Z TL': 'Satış Kârı TL',
-        'Gerçekleşmemiş K/Z TL': 'Bekleyen Kâr TL',
-        'Toplam K/Z TL': 'Toplam Kâr/Zarar TL',
-    })
-
 inject_branding(); init_db()
 
 # Uygulama açıldığında fiyatları oturum başına bir kez otomatik yenile.
@@ -100,8 +92,8 @@ if 'auto_price_refresh_done' not in st.session_state:
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.5 Experience Update')
-    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📈 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
+    st.caption('MyFin • V6.6 Settings & Cleanup')
+    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
         with st.spinner('Fiyat kaynakları deneniyor...'):
@@ -121,7 +113,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.5 Experience Update</div>
+  <div class='title'>Benim Finans • MyFin • V6.6 Settings & Cleanup</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -209,7 +201,7 @@ elif page=='💼 Portföy':
 
             cols_to_show = [c for c in ['Kategori','Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Getiri %'] if c in cat_show.columns]
             st.dataframe(
-                friendly_labels(money_cols(cat_show[cols_to_show], ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])),
+                money_cols(cat_show[cols_to_show], ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']),
                 use_container_width=True,
                 hide_index=True,
             )
@@ -220,11 +212,11 @@ elif page=='💼 Portföy':
             st.info('Portföy boş.')
         else:
             compact_cols = [c for c in ['Varlık','Sembol','Kategori','Miktar','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Getiri %'] if c in portfolio.columns]
-            show = friendly_labels(money_cols(portfolio[compact_cols], ['Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']))
+            show = money_cols(portfolio[compact_cols], ['Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])
             st.dataframe(show, use_container_width=True, hide_index=True)
 
             with st.expander('Detaylı portföy tablosu'):
-                detay = friendly_labels(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Toplam Alış TL','Toplam Satış TL']))
+                detay = money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Toplam Alış TL','Toplam Satış TL'])
                 st.dataframe(detay, use_container_width=True, hide_index=True)
 
     with tab_yonet:
@@ -380,7 +372,7 @@ elif page=='🛒 İlk Alış':
                 st.rerun()
 
 elif page=='📒 İşlem Defteri':
-    st.header('💳 İşlem Defteri')
+    st.header('📒 İşlem Defteri')
     st.info('Bu ekran, mevcut bir varlığa sonradan alış/satış/temettü/komisyon işlemi eklemek içindir. İlk alış için 🛒 İlk Alış ekranını kullanabilirsin.')
     assets=assets_df()
     if assets.empty:
@@ -411,12 +403,12 @@ elif page=='📒 İşlem Defteri':
             if st.button('İşlemi sil'):
                 delete_transaction(del_id); st.success('Silindi'); st.rerun()
 
-elif page=='📈 Analiz':
-    st.header('📈 Analiz')
+elif page=='📊 Kâr/Zarar':
+    st.header('📊 Kâr/Zarar Analizi')
     if not portfolio.empty:
-        st.dataframe(friendly_labels(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])), use_container_width=True, hide_index=True)
+        st.dataframe(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']), use_container_width=True, hide_index=True)
         st.subheader('Kategori bazında')
-        st.dataframe(friendly_labels(money_cols(cat, ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])), use_container_width=True, hide_index=True)
+        st.dataframe(money_cols(cat, ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']), use_container_width=True, hide_index=True)
     st.subheader('Tarih aralığı')
     c1,c2=st.columns(2)
     start=c1.date_input('Başlangıç', value=date.today()-timedelta(days=30))
@@ -429,24 +421,90 @@ elif page=='📈 Analiz':
     s4.metric('Net nakit', tl(summary.get('net_cash',0)))
     st.dataframe(txr, use_container_width=True, hide_index=True)
 
-    st.subheader('Grafikler')
+elif page=='📈 Grafikler':
+    st.header('📈 Grafikler')
     if not portfolio.empty:
         st.plotly_chart(px.bar(portfolio, x='Varlık', y='Toplam K/Z TL', color='Kategori', title='Varlık bazında toplam K/Z'), use_container_width=True)
         st.plotly_chart(px.pie(cat, names='Kategori', values='Güncel Değer TL', hole=.55, title='Kategori dağılımı'), use_container_width=True)
 
-    with st.expander('📥 CSV Raporları'):
-        st.download_button('📥 Portföy CSV indir', portfolio.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_portfoy.csv', 'text/csv')
-        tx_all=transactions_df()
-        st.download_button('📥 İşlemler CSV indir', tx_all.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_islemler.csv', 'text/csv')
+elif page=='🧾 Raporlar':
+    st.header('🧾 Raporlar')
+    st.download_button('📥 Portföy CSV indir', portfolio.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_portfoy.csv', 'text/csv')
+    tx=transactions_df()
+    st.download_button('📥 İşlemler CSV indir', tx.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_islemler.csv', 'text/csv')
 
 elif page=='⚙️ Ayarlar':
     st.header('⚙️ Ayarlar')
-    st.info(f'Veri altyapısı: {backend_name()}')
-    if using_supabase():
-        st.success('Supabase aktif: Telefondan veya bilgisayardan yapılan değişiklikler bulutta kalıcı saklanır.')
-    else:
-        st.warning('Supabase secrets bulunamadı. Yerel geliştirme için SQLite kullanılıyor. Online kalıcı kullanım için Streamlit Secrets içine SUPABASE_URL ve SUPABASE_ANON_KEY ekle.')
-    st.subheader('🧹 Tüm veriyi sıfırla')
-    confirm=st.checkbox('Tüm portföyü, işlemleri ve fiyat önbelleğini silmeyi onaylıyorum')
-    if st.button('🗑️ Tüm portföyü temizle', type='primary', disabled=not confirm):
-        clear_all_data(); st.success('Portföy tamamen temizlendi.'); st.rerun()
+    st.caption('Uygulama durumu, bağlantı testi, isim/kategori düzenleme ve güvenli temizlik işlemleri.')
+
+    tab_durum, tab_duzen, tab_tehlike = st.tabs(['☁️ Sistem Durumu', '✏️ İsim & Kategori', '🧹 Temizlik'])
+
+    with tab_durum:
+        st.subheader('☁️ Veri altyapısı')
+        st.info(f'Veri altyapısı: {backend_name()}')
+        if using_supabase():
+            st.success('Supabase aktif: Telefondan veya bilgisayardan yapılan değişiklikler bulutta kalıcı saklanır.')
+        else:
+            st.warning('Supabase secrets bulunamadı. Yerel geliştirme için SQLite kullanılıyor.')
+
+        if st.button('🔌 Bağlantıyı test et', use_container_width=True):
+            try:
+                test_assets = assets_df(active_only=False, include_archived=True)
+                st.success(f'Bağlantı başarılı. Kayıtlı varlık sayısı: {len(test_assets)}')
+            except Exception as e:
+                st.error(f'Bağlantı testi başarısız: {e}')
+
+        st.subheader('ℹ️ Sürüm')
+        st.write('Benim Finans • MyFin • V6.6 Settings & Cleanup')
+        st.write('Bu sürümde Bulut Test/App sayfaları kaldırılacak, ayarlar ekranı isim ve kategori yönetimi için kullanılacak.')
+
+    with tab_duzen:
+        st.subheader('✏️ Varlık adı, kategori ve manuel fiyat düzenle')
+        assets_all = assets_df(active_only=False, include_archived=True)
+        if assets_all.empty:
+            st.info('Düzenlenecek varlık yok.')
+        else:
+            edit_cols = [c for c in ['name','symbol','category','manual_price_try','active','archived'] if c in assets_all.columns]
+            edited = st.data_editor(
+                assets_all[edit_cols],
+                use_container_width=True,
+                disabled=['symbol'],
+                num_rows='fixed',
+                key='settings_assets_editor'
+            )
+            if st.button('💾 Varlık ayarlarını kaydet', type='primary', use_container_width=True):
+                for _, r in edited.iterrows():
+                    update_asset(r['symbol'], r['name'], r['category'], r.get('manual_price_try', 0), r.get('active', True))
+                    if bool(r.get('archived', False)):
+                        archive_asset(r['symbol'])
+                    else:
+                        restore_asset(r['symbol'])
+                st.success('Varlık ayarları kaydedildi.')
+                st.rerun()
+
+            st.divider()
+            st.subheader('🏷️ Kategori başlığını toplu değiştir')
+            categories = sorted([str(x) for x in assets_all['category'].dropna().unique().tolist()]) if 'category' in assets_all.columns else []
+            if categories:
+                old_cat = st.selectbox('Değiştirilecek kategori', categories)
+                new_cat = st.text_input('Yeni kategori adı', value=old_cat)
+                if st.button('🏷️ Kategoriyi toplu güncelle', use_container_width=True):
+                    if not new_cat.strip():
+                        st.error('Yeni kategori adı boş olamaz.')
+                    else:
+                        affected = assets_all[assets_all['category'].astype(str) == str(old_cat)]
+                        for _, r in affected.iterrows():
+                            update_asset(r['symbol'], r['name'], new_cat.strip(), r.get('manual_price_try', 0), r.get('active', True))
+                        st.success(f'{old_cat} kategorisi {new_cat.strip()} olarak güncellendi.')
+                        st.rerun()
+
+            st.divider()
+            st.subheader('🧭 Kategori önerileri')
+            st.caption('Yeni girişlerde kullanılacak ana kategoriler: Altın, Döviz, BIST Hisse, ABD Hisse, Kripto, Fon, BES, Diğer. İstersen varlık düzenleme tablosundan özel kategori adı da verebilirsin.')
+
+    with tab_tehlike:
+        st.subheader('🧹 Tüm veriyi sıfırla')
+        st.warning('Bu işlem portföyü, işlemleri ve fiyat önbelleğini siler. Supabase kullanıyorsan canlı veriyi etkiler.')
+        confirm=st.checkbox('Tüm portföyü, işlemleri ve fiyat önbelleğini silmeyi onaylıyorum')
+        if st.button('🗑️ Tüm portföyü temizle', type='primary', disabled=not confirm):
+            clear_all_data(); st.success('Portföy tamamen temizlendi.'); st.rerun()
