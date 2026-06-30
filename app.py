@@ -50,6 +50,28 @@ def pct(x):
     except Exception: return '-'
 
 
+
+
+def parse_tr_number(value, default=0.0):
+    """Türkçe sayı girişini float'a çevirir: 1.234,56 -> 1234.56"""
+    if value is None:
+        return default
+    text = str(value).strip()
+    if not text:
+        return default
+    text = text.replace(" ", "")
+    # Hem nokta hem virgül varsa, nokta binlik ayırıcı, virgül ondalık kabul edilir.
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    try:
+        return float(text)
+    except Exception:
+        return default
+
+
+def tr_amount_input(label, key, placeholder="0,00", help=None):
+    return st.text_input(label, value="", placeholder=placeholder, key=key, help=help)
+
 def money_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     out=df.copy()
     for c in cols:
@@ -61,7 +83,7 @@ inject_branding(); init_db()
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.3 Currency Entry')
+    st.caption('MyFin • V6.4 TR Decimal Entry')
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlemler','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
@@ -82,7 +104,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.1 Cloud Engine</div>
+  <div class='title'>Benim Finans • MyFin • V6.4 TR Decimal Entry</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -207,7 +229,8 @@ elif page=='➕ Yeni Varlık':
         with c3:
             alis_tarihi = st.date_input('Alış tarihi', value=date.today())
         with c4:
-            adet = st.number_input('Adet / Gram',min_value=0.0,value=0.0,step=0.01,format='%.6f')
+            adet_txt = tr_amount_input('Adet / Gram', 'new_adet', '0,00')
+            adet = parse_tr_number(adet_txt)
         with c5:
             para_birimi = st.selectbox('Alış para birimi', ['TRY','USD','EUR'], index=0)
 
@@ -216,22 +239,24 @@ elif page=='➕ Yeni Varlık':
 
         c6, c7 = st.columns(2)
         with c6:
-            alis_fiyati_orijinal = st.number_input(
-                f'Alış fiyatı ({para_birimi})',
-                min_value=0.0,
-                value=0.0,
-                step=0.01,
-                help='ABD hisselerinde USD, Avrupa varlıklarında EUR, yerel varlıklarda TRY girilebilir.'
+            alis_fiyati_txt = tr_amount_input(
+                'Alış fiyatı',
+                'new_alis_fiyati',
+                '0,00',
+                help='Seçtiğin para biriminde gir. Örnek: 12,35 veya 1.234,56'
             )
+            alis_fiyati_orijinal = parse_tr_number(alis_fiyati_txt)
         with c7:
-            komisyon = st.number_input('Komisyon TL',min_value=0.0,value=0.0,step=0.01, help='Alışta maliyete eklenir.')
+            komisyon_txt = tr_amount_input('Komisyon TL', 'new_komisyon', '0,00', help='Alışta maliyete eklenir.')
+            komisyon = parse_tr_number(komisyon_txt)
 
         manuel_tl = 0.0
         kur_bilgisi = ''
         if para_birimi != 'TRY':
             if eski_tarih:
                 st.warning('Eski tarihli USD/EUR işlemlerde bugünkü kur kullanılmaz. Lütfen o tarihteki TL karşılığını manuel gir.')
-                manuel_tl = st.number_input('Alış fiyatı TL manuel', min_value=0.0, value=0.0, step=0.01)
+                manuel_tl_txt = tr_amount_input('Alış fiyatı TL manuel', 'new_manuel_tl_eski', '0,00')
+                manuel_tl = parse_tr_number(manuel_tl_txt)
                 kur_bilgisi = 'Manuel tarihsel TL fiyat kullanıldı'
             else:
                 fx_symbol = kur_sembolu(para_birimi)
@@ -242,13 +267,15 @@ elif page=='➕ Yeni Varlık':
                 except Exception:
                     kur = 0
                     st.warning('Güncel kur alınamadı. TL karşılığı manuel girilebilir.')
-                    manuel_tl = st.number_input('Alış fiyatı TL manuel', min_value=0.0, value=0.0, step=0.01)
+                    manuel_tl_txt = tr_amount_input('Alış fiyatı TL manuel', 'new_manuel_tl_eski', '0,00')
+                manuel_tl = parse_tr_number(manuel_tl_txt)
         else:
             kur = 1
 
         c8, c9 = st.columns(2)
         with c8:
-            manuel_fiyat = st.number_input('Manuel güncel fiyat TL',min_value=0.0,value=0.0,step=0.01)
+            manuel_fiyat_txt = tr_amount_input('Manuel güncel fiyat TL', 'new_manuel_fiyat', '0,00')
+            manuel_fiyat = parse_tr_number(manuel_fiyat_txt)
         with c9:
             not_alani = st.text_input('Not')
 
@@ -298,9 +325,12 @@ elif page=='💳 İşlemler':
             sym=c2.selectbox('Varlık', assets['symbol'].tolist(), format_func=lambda s: f"{assets[assets.symbol==s].iloc[0]['name']} ({s})")
             action=c3.selectbox('İşlem türü', ['Alış','Satış','Temettü','Komisyon'])
             c4,c5,c6=st.columns(3)
-            qty=c4.number_input('Adet / Gram', min_value=0.0, value=0.0, step=0.01, format='%.6f')
-            price=c5.number_input('İşlem fiyatı TL', min_value=0.0, value=0.0, step=0.01)
-            commission=c6.number_input('Komisyon TL', min_value=0.0, value=0.0, step=0.01)
+            qty_txt=c4.text_input('Adet / Gram', value='', placeholder='0,00', key='tx_qty')
+            price_txt=c5.text_input('İşlem fiyatı TL', value='', placeholder='0,00', key='tx_price')
+            commission_txt=c6.text_input('Komisyon TL', value='', placeholder='0,00', key='tx_commission')
+            qty=parse_tr_number(qty_txt)
+            price=parse_tr_number(price_txt)
+            commission=parse_tr_number(commission_txt)
             note=st.text_input('Not')
             if st.form_submit_button('💾 İşlemi kaydet', type='primary'):
                 add_transaction(tx_date, sym, action, qty, price, commission, note)
