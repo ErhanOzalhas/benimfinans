@@ -17,26 +17,84 @@ st.set_page_config(page_title='Benim Finans', page_icon='💼', layout='wide')
 
 
 def inject_branding():
+    """Benim Finans V6.8 görsel kimliği: beyaz zemin, lacivert/mavi marka dili, mobil uyumlu kartlar."""
     logo = Path('assets/logo.svg')
     if logo.exists():
         b64 = base64.b64encode(logo.read_bytes()).decode()
         st.markdown(f"""
         <link rel="manifest" href="assets/manifest.json">
-        <meta name="theme-color" content="#0F172A">
+        <meta name="theme-color" content="#FFFFFF">
         <link rel="apple-touch-icon" href="data:image/svg+xml;base64,{b64}">
         """, unsafe_allow_html=True)
-    st.markdown('''
+
+    st.markdown("""
     <style>
-    .main {background:#f8fafc;}
-    [data-testid="stSidebar"]{background:linear-gradient(180deg,#0f172a,#111827);color:white;}
-    [data-testid="stSidebar"] *{color:white!important;}
-    .hero{border-radius:26px;padding:24px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;margin-bottom:18px;box-shadow:0 16px 40px rgba(15,23,42,.18)}
-    .hero .title{font-size:18px;opacity:.85}.hero .value{font-size:40px;font-weight:900;letter-spacing:-1px}.hero .sub{font-size:16px;opacity:.9}
-    .card{border:1px solid #e5e7eb;border-radius:22px;padding:18px;background:white;box-shadow:0 8px 30px rgba(15,23,42,.06);margin-bottom:12px}
-    .card-title{font-weight:800;color:#334155}.card-value{font-size:26px;font-weight:900;color:#0f172a}.good{color:#16a34a;font-weight:800}.bad{color:#dc2626;font-weight:800}
-    .stButton>button{border-radius:14px;font-weight:800;border:1px solid #cbd5e1}.stDataFrame{border-radius:18px;overflow:hidden}
-    @media(max-width: 768px){.hero .value{font-size:30px}.block-container{padding:1rem .7rem}.card-value{font-size:22px}}
+    :root{--bf-navy:#071A3A;--bf-blue:#1455D9;--bf-blue2:#2563EB;--bf-sky:#EAF3FF;--bf-green:#16A34A;--bf-red:#DC2626;--bf-text:#0F172A;--bf-muted:#64748B;--bf-line:#E5EAF2;--bf-bg:#FBFDFF;}
+    html, body, [data-testid="stAppViewContainer"]{background:var(--bf-bg)!important;color:var(--bf-text)!important;}
+    .main .block-container{max-width:1380px;padding-top:1.35rem;padding-bottom:3rem;}
+    header[data-testid="stHeader"]{background:rgba(255,255,255,.72);backdrop-filter:blur(14px);border-bottom:1px solid rgba(226,232,240,.75)}
+    [data-testid="stSidebar"]{background:#FFFFFF!important;border-right:1px solid var(--bf-line);box-shadow:12px 0 35px rgba(15,23,42,.035);}
+    [data-testid="stSidebar"] *{color:var(--bf-text)!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label{border-radius:14px!important;padding:.38rem .55rem!important;margin:.15rem 0!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover{background:#F1F6FF!important;}
+    [data-testid="stSidebar"] [aria-checked="true"]{background:linear-gradient(135deg,#0B3EA8,#1455D9)!important;border-radius:14px!important;box-shadow:0 10px 20px rgba(20,85,217,.18)!important;}
+    [data-testid="stSidebar"] [aria-checked="true"] *{color:white!important;}
+    .bf-sidebar-brand{display:flex;align-items:center;gap:10px;padding:.35rem .1rem 1rem .1rem;}
+    .bf-sidebar-logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#071A3A,#1455D9);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;box-shadow:0 10px 24px rgba(20,85,217,.25)}
+    .bf-sidebar-title{font-size:18px;font-weight:900;letter-spacing:-.02em;color:var(--bf-navy)}
+    .bf-sidebar-sub{font-size:12px;color:var(--bf-muted)!important;font-weight:700;margin-top:-2px}
+    .bf-topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:4px 0 22px 0;}
+    .bf-brand{display:flex;align-items:center;gap:16px;}
+    .bf-logo{width:76px;height:76px;border-radius:22px;background:linear-gradient(145deg,#071A3A,#0B3EA8 56%,#2563EB);display:flex;align-items:center;justify-content:center;box-shadow:0 18px 40px rgba(20,85,217,.22);font-size:38px;color:white;}
+    .bf-title{font-size:42px;font-weight:950;letter-spacing:-.045em;line-height:1;color:var(--bf-navy);}
+    .bf-title span{color:var(--bf-blue);}
+    .bf-subtitle{font-size:15px;color:#475569;font-weight:650;margin-top:8px;}
+    .bf-status{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end;}
+    .bf-pill{border:1px solid var(--bf-line);background:white;border-radius:999px;padding:9px 14px;font-weight:800;color:var(--bf-navy);box-shadow:0 8px 22px rgba(15,23,42,.05);}
+    .bf-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bf-green);margin-right:7px;box-shadow:0 0 0 5px rgba(22,163,74,.10);}
+    .bf-version{background:#EAF3FF;color:#1455D9;border:1px solid #D7E7FF;border-radius:999px;padding:9px 14px;font-weight:900;}
+    .bf-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:10px 0 18px;}
+    .bf-kpi{background:white;border:1px solid var(--bf-line);border-radius:22px;padding:18px 20px;box-shadow:0 14px 34px rgba(15,23,42,.06);display:flex;align-items:center;justify-content:space-between;min-height:116px;}
+    .bf-kpi-label{font-size:13px;color:#334155;font-weight:800;margin-bottom:8px;}
+    .bf-kpi-value{font-size:27px;font-weight:950;color:var(--bf-navy);letter-spacing:-.03em;}
+    .bf-kpi-delta{font-size:13px;font-weight:900;margin-top:7px;}
+    .bf-icon{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:25px;background:#EFF6FF;color:#1455D9;}
+    .bf-icon.green{background:#EAF8F0;color:#16A34A}.bf-icon.purple{background:#F4F0FF;color:#7C3AED}.bf-icon.gold{background:#FFF7E6;color:#E5A400}
+    .bf-card{border:1px solid var(--bf-line);border-radius:24px;background:white;box-shadow:0 14px 34px rgba(15,23,42,.06);padding:20px;margin-bottom:16px;}
+    .good{color:var(--bf-green);font-weight:900}.bad{color:var(--bf-red);font-weight:900}
+    .stButton>button{border-radius:14px!important;font-weight:900!important;border:1px solid #D9E3F0!important;min-height:44px;}
+    .stButton>button[kind="primary"]{background:linear-gradient(135deg,#1455D9,#0B3EA8)!important;border:0!important;color:white!important;box-shadow:0 12px 24px rgba(20,85,217,.22)!important;}
+    .stDataFrame{border-radius:18px;overflow:hidden;border:1px solid var(--bf-line)}
+    div[data-testid="stMetric"]{background:white;border:1px solid var(--bf-line);border-radius:20px;padding:14px 16px;box-shadow:0 12px 30px rgba(15,23,42,.055)}
+    div[data-testid="stMetricLabel"]{font-weight:800;color:#334155!important}
+    div[data-testid="stMetricValue"]{color:var(--bf-navy)!important;font-weight:950!important}
+    @media(max-width: 980px){.main .block-container{padding-left:.85rem;padding-right:.85rem}.bf-topbar{align-items:flex-start;flex-direction:column}.bf-logo{width:58px;height:58px;border-radius:18px;font-size:30px}.bf-title{font-size:34px}.bf-status{justify-content:flex-start;gap:10px}.bf-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bf-kpi{padding:14px;min-height:98px;border-radius:18px}.bf-kpi-value{font-size:22px}.bf-icon{width:42px;height:42px;border-radius:13px;font-size:21px}}
+    @media(max-width: 560px){.bf-kpi-grid{grid-template-columns:1fr 1fr}.bf-title{font-size:29px}.bf-subtitle{font-size:13px}.bf-pill,.bf-version{font-size:12px;padding:7px 10px}[data-testid="stSidebar"]{width:15rem!important}}
     </style>
+    """, unsafe_allow_html=True)
+
+
+def render_brand_header(total, pl, pl_pct, realized, unrealized):
+    status = 'Supabase bağlı' if using_supabase() else 'Yerel test modu'
+    now_txt = pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')
+    st.markdown(f'''
+    <div class="bf-topbar">
+      <div class="bf-brand">
+        <div class="bf-logo">📈</div>
+        <div><div class="bf-title">Benim <span>Finans</span></div><div class="bf-subtitle">Akıllı yatırım takibi, net sonuçlar.</div></div>
+      </div>
+      <div class="bf-status">
+        <div class="bf-pill"><span class="bf-dot"></span>Sistem Aktif</div>
+        <div class="bf-pill">🕘 Son güncelleme<br><b>{now_txt}</b></div>
+        <div class="bf-version">MyFin v6.8<br>Brand Update</div>
+      </div>
+    </div>
+    <div class="bf-kpi-grid">
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Portföy Değeri</div><div class="bf-kpi-value">{tl(total)}</div><div class="bf-kpi-delta {'good' if pl>=0 else 'bad'}">▲ {pct(pl_pct)} ({tl(pl)})</div></div><div class="bf-icon">💼</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Yatırım</div><div class="bf-kpi-value">{tl(max(total-pl,0))}</div><div class="bf-kpi-delta">{status}</div></div><div class="bf-icon gold">🪙</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Bekleyen Kâr</div><div class="bf-kpi-value {'good' if unrealized>=0 else 'bad'}">{tl(unrealized)}</div><div class="bf-kpi-delta {'good' if unrealized>=0 else 'bad'}">📈 Portföyde bekleyen</div></div><div class="bf-icon green">↗</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Satış Kârı</div><div class="bf-kpi-value {'good' if realized>=0 else 'bad'}">{tl(realized)}</div><div class="bf-kpi-delta">💵 Kesinleşen sonuç</div></div><div class="bf-icon purple">▮</div></div>
+    </div>
     ''', unsafe_allow_html=True)
 
 
@@ -91,8 +149,7 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.6 Settings & Cleanup')
+    st.markdown("<div class='bf-sidebar-brand'><div class='bf-sidebar-logo'>📈</div><div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v6.8</div></div></div>", unsafe_allow_html=True)
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
@@ -111,19 +168,7 @@ pl_pct=(pl/base*100) if base else 0
 realized=float(portfolio['Gerçekleşmiş K/Z TL'].sum()) if not portfolio.empty else 0
 unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.empty else 0
 
-st.markdown(f"""
-<div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.6 Settings & Cleanup</div>
-  <div class='value'>{tl(total)}</div>
-  <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
-</div>
-""", unsafe_allow_html=True)
-
-m1,m2,m3,m4=st.columns(4)
-m1.metric('Toplam Portföy', tl(total))
-m2.metric('Toplam K/Z', tl(pl), pct(pl_pct))
-m3.metric('Satış Kârı', tl(realized))
-m4.metric('Bekleyen Kâr', tl(unrealized))
+render_brand_header(total, pl, pl_pct, realized, unrealized)
 
 c_top1, c_top2 = st.columns(2)
 with c_top1:
@@ -455,8 +500,8 @@ elif page=='⚙️ Ayarlar':
                 st.error(f'Bağlantı testi başarısız: {e}')
 
         st.subheader('ℹ️ Sürüm')
-        st.write('Benim Finans • MyFin • V6.6 Settings & Cleanup')
-        st.write('Bu sürümde Bulut Test/App sayfaları kaldırılacak, ayarlar ekranı isim ve kategori yönetimi için kullanılacak.')
+        st.write('Benim Finans • MyFin • V6.8 Brand Update')
+        st.write('Bu sürümde beyaz modern marka arayüzü, mobil uyumlu kartlar ve sade menü yapısı kullanılır.')
 
     with tab_duzen:
         st.subheader('✏️ Varlık adı, kategori ve manuel fiyat düzenle')
