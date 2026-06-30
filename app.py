@@ -79,6 +79,14 @@ def money_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     if 'Getiri %' in out.columns: out['Getiri %']=out['Getiri %'].map(pct)
     return out
 
+
+def friendly_labels(df: pd.DataFrame) -> pd.DataFrame:
+    return df.rename(columns={
+        'Gerçekleşmiş K/Z TL': 'Satış Kârı TL',
+        'Gerçekleşmemiş K/Z TL': 'Bekleyen Kâr TL',
+        'Toplam K/Z TL': 'Toplam Kâr/Zarar TL',
+    })
+
 inject_branding(); init_db()
 
 # Uygulama açıldığında fiyatları oturum başına bir kez otomatik yenile.
@@ -92,8 +100,8 @@ if 'auto_price_refresh_done' not in st.session_state:
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.5 Portfolio Experience')
-    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlem Defteri','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
+    st.caption('MyFin • V6.5 Experience Update')
+    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📈 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
         with st.spinner('Fiyat kaynakları deneniyor...'):
@@ -113,7 +121,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.5 Portfolio Experience</div>
+  <div class='title'>Benim Finans • MyFin • V6.5 Experience Update</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -122,8 +130,8 @@ st.markdown(f"""
 m1,m2,m3,m4=st.columns(4)
 m1.metric('Toplam Portföy', tl(total))
 m2.metric('Toplam K/Z', tl(pl), pct(pl_pct))
-m3.metric('Gerçekleşmiş K/Z', tl(realized))
-m4.metric('Gerçekleşmemiş K/Z', tl(unrealized))
+m3.metric('Satış Kârı', tl(realized))
+m4.metric('Bekleyen Kâr', tl(unrealized))
 
 c_top1, c_top2 = st.columns(2)
 with c_top1:
@@ -144,7 +152,7 @@ st.divider()
 if page=='🏠 Ana Sayfa':
     st.header('🏠 Ana Sayfa')
     if cat.empty:
-        st.info('Portföy boş. ➕ Yeni Varlık ekranından geçmiş tarihli ilk alımlarını girerek başlayabilirsin.')
+        st.info('Portföy boş. 🛒 İlk Alış ekranından geçmiş tarihli ilk alımlarını girerek başlayabilirsin.')
     else:
         cols=st.columns(min(4, len(cat)))
         for i,(_,r) in enumerate(cat.sort_values('Güncel Değer TL', ascending=False).iterrows()):
@@ -201,7 +209,7 @@ elif page=='💼 Portföy':
 
             cols_to_show = [c for c in ['Kategori','Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Getiri %'] if c in cat_show.columns]
             st.dataframe(
-                money_cols(cat_show[cols_to_show], ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']),
+                friendly_labels(money_cols(cat_show[cols_to_show], ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])),
                 use_container_width=True,
                 hide_index=True,
             )
@@ -212,11 +220,11 @@ elif page=='💼 Portföy':
             st.info('Portföy boş.')
         else:
             compact_cols = [c for c in ['Varlık','Sembol','Kategori','Miktar','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Getiri %'] if c in portfolio.columns]
-            show = money_cols(portfolio[compact_cols], ['Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])
+            show = friendly_labels(money_cols(portfolio[compact_cols], ['Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']))
             st.dataframe(show, use_container_width=True, hide_index=True)
 
             with st.expander('Detaylı portföy tablosu'):
-                detay = money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Toplam Alış TL','Toplam Satış TL'])
+                detay = friendly_labels(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Toplam Alış TL','Toplam Satış TL']))
                 st.dataframe(detay, use_container_width=True, hide_index=True)
 
     with tab_yonet:
@@ -244,8 +252,8 @@ elif page=='💼 Portföy':
         else:
             st.info('Henüz kayıtlı varlık yok.')
 
-elif page=='➕ Yeni Varlık':
-    st.header('➕ Yeni Varlık / Geçmiş Tarihli Alış')
+elif page=='🛒 İlk Alış':
+    st.header('🛒 İlk Alış / Geçmiş Tarihli Alış')
 
     def otomatik_sembol(kategori, emtia):
         e = emtia.strip().upper()
@@ -371,9 +379,9 @@ elif page=='➕ Yeni Varlık':
                 st.success(f'{emtia} kaydedildi. Otomatik sembol: {sembol}. Alış fiyatı TL: {alis_fiyati_tl:,.2f}')
                 st.rerun()
 
-elif page=='💳 İşlem Defteri':
+elif page=='📒 İşlem Defteri':
     st.header('💳 İşlem Defteri')
-    st.info('Bu ekran, mevcut bir varlığa sonradan alış/satış/temettü/komisyon işlemi eklemek içindir. İlk alış için ➕ Yeni Varlık ekranını kullanabilirsin.')
+    st.info('Bu ekran, mevcut bir varlığa sonradan alış/satış/temettü/komisyon işlemi eklemek içindir. İlk alış için 🛒 İlk Alış ekranını kullanabilirsin.')
     assets=assets_df()
     if assets.empty:
         st.warning('Önce varlık ekle.')
@@ -403,12 +411,12 @@ elif page=='💳 İşlem Defteri':
             if st.button('İşlemi sil'):
                 delete_transaction(del_id); st.success('Silindi'); st.rerun()
 
-elif page=='📊 Kâr/Zarar':
-    st.header('📊 Kâr/Zarar Analizi')
+elif page=='📈 Analiz':
+    st.header('📈 Analiz')
     if not portfolio.empty:
-        st.dataframe(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']), use_container_width=True, hide_index=True)
+        st.dataframe(friendly_labels(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])), use_container_width=True, hide_index=True)
         st.subheader('Kategori bazında')
-        st.dataframe(money_cols(cat, ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']), use_container_width=True, hide_index=True)
+        st.dataframe(friendly_labels(money_cols(cat, ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])), use_container_width=True, hide_index=True)
     st.subheader('Tarih aralığı')
     c1,c2=st.columns(2)
     start=c1.date_input('Başlangıç', value=date.today()-timedelta(days=30))
@@ -421,17 +429,15 @@ elif page=='📊 Kâr/Zarar':
     s4.metric('Net nakit', tl(summary.get('net_cash',0)))
     st.dataframe(txr, use_container_width=True, hide_index=True)
 
-elif page=='📈 Grafikler':
-    st.header('📈 Grafikler')
+    st.subheader('Grafikler')
     if not portfolio.empty:
         st.plotly_chart(px.bar(portfolio, x='Varlık', y='Toplam K/Z TL', color='Kategori', title='Varlık bazında toplam K/Z'), use_container_width=True)
         st.plotly_chart(px.pie(cat, names='Kategori', values='Güncel Değer TL', hole=.55, title='Kategori dağılımı'), use_container_width=True)
 
-elif page=='🧾 Raporlar':
-    st.header('🧾 Raporlar')
-    st.download_button('📥 Portföy CSV indir', portfolio.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_portfoy.csv', 'text/csv')
-    tx=transactions_df()
-    st.download_button('📥 İşlemler CSV indir', tx.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_islemler.csv', 'text/csv')
+    with st.expander('📥 CSV Raporları'):
+        st.download_button('📥 Portföy CSV indir', portfolio.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_portfoy.csv', 'text/csv')
+        tx_all=transactions_df()
+        st.download_button('📥 İşlemler CSV indir', tx_all.to_csv(index=False).encode('utf-8-sig'), 'benimfinans_islemler.csv', 'text/csv')
 
 elif page=='⚙️ Ayarlar':
     st.header('⚙️ Ayarlar')
