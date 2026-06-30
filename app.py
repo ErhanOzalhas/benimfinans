@@ -292,7 +292,117 @@ def inject_branding():
     .bf-logo-svg{filter:drop-shadow(0 16px 26px rgba(0,107,147,.20));}
     .stButton>button[kind="primary"]{background:linear-gradient(135deg,#C2410C,#9A3412)!important;border:0!important;color:white!important;box-shadow:0 12px 24px rgba(194,65,12,.22)!important;}
 
-    </style>
+    
+
+    /* V7.6 Premium UI refinement: exact wide Hawaiian sidebar + cleaner home */
+    :root{
+      --bf-ocean:#008DB9;
+      --bf-ocean-deep:#00769D;
+      --bf-ocean-dark:#005F82;
+      --bf-blue:#1455D9;
+      --bf-navy:#071A3A;
+      --bf-card-border:#E3EAF4;
+    }
+    .main .block-container{max-width:1320px!important;padding-left:2.0rem!important;padding-right:2.0rem!important;}
+    section[data-testid="stSidebar"]{width:356px!important;min-width:356px!important;background:linear-gradient(180deg,#0098BF 0%,#008DB9 46%,#00769D 100%)!important;}
+    section[data-testid="stSidebar"] > div{width:356px!important;min-width:356px!important;background:transparent!important;}
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"]{gap:.72rem!important;}
+    [data-testid="stSidebar"] .block-container,
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"]{padding-left:1.28rem!important;padding-right:1.28rem!important;}
+    .bf-sidebar-brand{display:flex!important;align-items:center!important;gap:14px!important;padding:1.35rem .25rem 1.65rem .25rem!important;}
+    .bf-sidebar-brand .bf-logo-svg{width:58px!important;height:58px!important;}
+    .bf-sidebar-title{font-size:26px!important;font-weight:700!important;line-height:1.05!important;color:#fff!important;}
+    .bf-sidebar-sub{font-size:15px!important;font-weight:400!important;color:#E6FAFF!important;margin-top:6px!important;}
+    [data-testid="stSidebar"] [role="radiogroup"]{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label{
+      width:100%!important;
+      height:76px!important;
+      min-height:76px!important;
+      max-height:76px!important;
+      box-sizing:border-box!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      padding:0 22px!important;
+      margin:0!important;
+      border-radius:17px!important;
+      background:rgba(255,255,255,.105)!important;
+      border:1px solid rgba(255,255,255,.48)!important;
+      box-shadow:0 14px 28px rgba(0,77,112,.10)!important;
+      transition:all .18s ease!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover{
+      background:rgba(255,255,255,.18)!important;
+      border-color:rgba(255,255,255,.78)!important;
+      transform:translateY(-1px)!important;
+      box-shadow:0 18px 34px rgba(0,77,112,.16)!important;
+    }
+    [data-testid="stSidebar"] [aria-checked="true"]{
+      background:rgba(255,255,255,.21)!important;
+      border-color:rgba(255,255,255,.92)!important;
+      box-shadow:0 18px 36px rgba(0,77,112,.18)!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label p{
+      font-size:22px!important;
+      font-weight:400!important;
+      letter-spacing:-.015em!important;
+      color:#fff!important;
+      line-height:1!important;
+    }
+    .bf-side-sep{height:1px!important;background:rgba(255,255,255,.60)!important;margin:1.45rem 0 1.1rem 0!important;}
+    .bf-market-title{font-size:19px!important;font-weight:400!important;color:#fff!important;letter-spacing:.01em!important;margin-bottom:12px!important;}
+    .bf-market-title span{font-size:14px!important;font-weight:400!important;color:#DAFFEA!important;}
+    .bf-market-card{
+      width:100%!important;
+      height:76px!important;
+      min-height:76px!important;
+      max-height:76px!important;
+      box-sizing:border-box!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:space-between!important;
+      padding:12px 18px!important;
+      margin:12px 0!important;
+      border-radius:17px!important;
+      background:rgba(255,255,255,.105)!important;
+      border:1px solid rgba(255,255,255,.48)!important;
+      box-shadow:0 14px 28px rgba(0,77,112,.10)!important;
+    }
+    .bf-market-name{font-size:17px!important;font-weight:400!important;color:#fff!important;line-height:1.1!important;}
+    .bf-market-val{font-size:23px!important;font-weight:500!important;color:#fff!important;line-height:1.05!important;}
+    .bf-market-pct{font-size:15px!important;font-weight:400!important;line-height:1!important;}
+    .bf-market-note{font-size:13px!important;font-weight:400!important;color:#E8FBFF!important;line-height:1.35!important;margin-top:16px!important;}
+    .bf-topbar{background:white!important;border:1px solid var(--bf-card-border)!important;border-radius:28px!important;padding:24px 28px!important;box-shadow:0 18px 46px rgba(15,23,42,.055)!important;margin:0 0 22px 0!important;}
+    .bf-logo-svg svg{border-radius:22px!important;}
+    .bf-title{font-size:42px!important;font-weight:800!important;letter-spacing:-.04em!important;}
+    .bf-subtitle{font-size:16px!important;font-weight:500!important;color:#334155!important;}
+    .bf-status{gap:12px!important;}
+    .bf-pill,.bf-version{min-height:52px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;border-radius:22px!important;padding:10px 18px!important;box-shadow:0 10px 28px rgba(15,23,42,.055)!important;font-weight:650!important;}
+    .bf-kpi-grid{gap:16px!important;margin-top:18px!important;margin-bottom:20px!important;}
+    .bf-kpi{min-height:136px!important;border-radius:22px!important;padding:22px 24px!important;}
+    .bf-kpi-label{font-size:14px!important;font-weight:700!important;color:#334155!important;}
+    .bf-kpi-value{font-size:30px!important;font-weight:850!important;line-height:1.15!important;}
+    .bf-kpi-delta{font-size:13px!important;font-weight:700!important;}
+    .bf-icon{width:48px!important;height:48px!important;border-radius:15px!important;font-size:21px!important;}
+    .bf-refresh-banner{display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #D9E6F5;border-radius:17px;background:#FFFFFF;padding:15px 20px;margin:16px 0 24px 0;box-shadow:0 12px 30px rgba(15,23,42,.04);}
+    .bf-refresh-left{display:flex;align-items:center;gap:13px;font-weight:700;color:#071A3A;}
+    .bf-refresh-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#EA580C;color:white;font-size:22px;box-shadow:0 10px 24px rgba(234,88,12,.22);}
+    .bf-section-title{font-size:26px!important;font-weight:800!important;letter-spacing:-.03em;color:#071A3A;margin:8px 0 16px;}
+    .bf-mini-card{background:white;border:1px solid var(--bf-card-border);border-radius:22px;padding:20px;box-shadow:0 14px 34px rgba(15,23,42,.05);margin-bottom:16px;}
+    .bf-mini-label{font-size:13px;font-weight:650;color:#475569;margin-bottom:7px;}
+    .bf-mini-value{font-size:28px;font-weight:850;letter-spacing:-.03em;color:#071A3A;line-height:1.1;}
+    .bf-card-title{font-size:18px;font-weight:750;color:#071A3A;margin-bottom:12px;}
+    .bf-winner{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E8EEF7;padding:12px 0;}
+    .bf-winner:last-child{border-bottom:none;}
+    .bf-rank{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#F1F5F9;color:#0F172A;font-weight:750;}
+    .bf-rank.gold{background:#FDE68A;color:#92400E}.bf-rank.silver{background:#E5E7EB;color:#374151}.bf-rank.bronze{background:#FDBA74;color:#7C2D12}
+    .bf-winner-name{font-weight:700;color:#071A3A;}.bf-winner-sub{font-size:12px;color:#64748B;}
+    .bf-quick-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:6px;}
+    .bf-quick-card{background:white;border:1px solid var(--bf-card-border);border-radius:18px;padding:18px 14px;text-align:center;box-shadow:0 12px 30px rgba(15,23,42,.045);}
+    .bf-quick-ico{font-size:30px;margin-bottom:8px}.bf-quick-title{font-weight:750;color:#071A3A}.bf-quick-sub{font-size:12px;color:#64748B;margin-top:4px;line-height:1.25;}
+    .stButton>button[kind="primary"]{background:linear-gradient(135deg,#C2410C,#9A3412)!important;border:0!important;color:white!important;box-shadow:0 12px 24px rgba(194,65,12,.22)!important;}
+    @media(max-width: 980px){section[data-testid="stSidebar"]{display:none!important}.main .block-container{padding-left:1rem!important;padding-right:1rem!important}.bf-topbar{padding:18px!important}.bf-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.bf-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.bf-title{font-size:32px!important}.bf-status{justify-content:flex-start!important}.bf-pill,.bf-version{min-height:42px!important;font-size:12px!important}.bf-kpi{min-height:116px!important}.bf-kpi-value{font-size:23px!important}}
+</style>
     """, unsafe_allow_html=True)
 
 
@@ -311,7 +421,7 @@ def render_brand_header(total, pl, pl_pct, realized, unrealized):
       <div class="bf-status">
         <div class="bf-pill"><span class="bf-dot"></span>Sistem aktif</div>
         <div class="bf-pill">Son güncelleme<br><b>{now_txt}</b></div>
-        <div class="bf-version">MyFin v7.4<br>Hawaiian Ocean</div>
+        <div class="bf-version">MyFin v7.6</div>
       </div>
     </div>
     <div class="bf-kpi-grid">
@@ -453,7 +563,7 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.4</div></div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.6</div></div></div>", unsafe_allow_html=True)
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Varlık Ekle','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
     render_sidebar_market_prices()
 
@@ -485,26 +595,67 @@ with c_top2:
 st.divider()
 
 if page=='🏠 Ana Sayfa':
-    st.header('🏠 Ana Sayfa')
     if cat.empty:
         st.info('Portföy boş. ➕ Varlık Ekle ekranından geçmiş tarihli ilk alımlarını girerek başlayabilirsin.')
     else:
-        cols=st.columns(min(4, len(cat)))
-        for i,(_,r) in enumerate(cat.sort_values('Güncel Değer TL', ascending=False).iterrows()):
-            with cols[i % len(cols)]:
-                st.markdown(f"""<div class='card'><div class='card-title'>{r['Kategori']}</div><div class='card-value'>{tl(r['Güncel Değer TL'])}</div><div class='{ 'good' if r['Toplam K/Z TL']>=0 else 'bad' }'>{tl(r['Toplam K/Z TL'])}</div></div>""", unsafe_allow_html=True)
-        left,right=st.columns([1,1])
+        st.markdown("<div class='bf-refresh-banner'><div class='bf-refresh-left'><div class='bf-refresh-icon'>↻</div><div>Fiyatlar anlık olarak güncellenmektedir.</div></div><div style='color:#334155;font-weight:500'>Canlı veriler ile portföyünüz güncel tutulur.</div></div>", unsafe_allow_html=True)
+
+        left, right = st.columns([1.05, 1])
         with left:
-            st.subheader('Kategori Dağılımı')
-            st.plotly_chart(px.pie(cat, values='Güncel Değer TL', names='Kategori', hole=.55), use_container_width=True)
+            st.markdown("<div class='bf-card-title'>Portföy Dağılımı</div>", unsafe_allow_html=True)
+            fig = px.pie(cat, values='Güncel Değer TL', names='Kategori', hole=.58)
+            fig.update_traces(textposition='outside', textinfo='none')
+            fig.update_layout(
+                height=390,
+                margin=dict(l=0, r=0, t=10, b=10),
+                legend=dict(orientation='v', yanchor='middle', y=.5, xanchor='left', x=.82),
+                annotations=[dict(text=f"<b>{tl(total)}</b><br><span style='font-size:12px'>Toplam Portföy</span>", x=.5, y=.5, showarrow=False, font_size=16)]
+            )
+            st.plotly_chart(fig, use_container_width=True)
         with right:
-            st.subheader('En çok kazandıran/kaybettiren')
-            top=portfolio.sort_values('Toplam K/Z TL', ascending=False).head(5)
-            st.dataframe(money_cols(top[['Varlık','Kategori','Toplam K/Z TL','Getiri %']], ['Toplam K/Z TL']), use_container_width=True, hide_index=True)
-        snaps = snapshots_df()
-        if not snaps.empty:
-            st.subheader('Portföy geçmişi')
-            st.plotly_chart(px.line(snaps, x='snapshot_date', y='total_value_try', markers=True, title='Günlük portföy değeri'), use_container_width=True)
+            st.markdown("<div class='bf-card-title'>Portföy Değeri <span style='font-size:13px;font-weight:500;color:#64748B'>(30 Gün)</span></div>", unsafe_allow_html=True)
+            snaps = snapshots_df()
+            if not snaps.empty:
+                fig2 = px.line(snaps.tail(30), x='snapshot_date', y='total_value_try', markers=False)
+                fig2.update_layout(height=390, margin=dict(l=0,r=0,t=10,b=10), showlegend=False)
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.markdown("<div class='bf-mini-card' style='height:340px;display:flex;align-items:center;justify-content:center;color:#64748B'>Portföy geçmişi için günlük değer kaydı oluştur.</div>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns([1.45, .95])
+        with c1:
+            st.markdown("<div class='bf-card-title'>Varlık Kategori Özeti</div>", unsafe_allow_html=True)
+            cat_show = cat.copy()
+            if 'Kalan Maliyet TL' in cat_show.columns:
+                cat_show['Getiri %'] = cat_show.apply(lambda r: (float(r.get('Toplam K/Z TL', 0)) / float(r.get('Kalan Maliyet TL', 0)) * 100) if float(r.get('Kalan Maliyet TL', 0) or 0) else 0, axis=1)
+            cols_to_show = [c for c in ['Kategori','Güncel Değer TL','Kalan Maliyet TL','Toplam K/Z TL','Getiri %'] if c in cat_show.columns]
+            st.dataframe(money_cols(cat_show[cols_to_show], ['Güncel Değer TL','Kalan Maliyet TL','Toplam K/Z TL']), use_container_width=True, hide_index=True)
+        with c2:
+            st.markdown("<div class='bf-card-title'>En Çok Kazandıranlar</div>", unsafe_allow_html=True)
+            top = portfolio.sort_values('Toplam K/Z TL', ascending=False).head(5)
+            if top.empty:
+                st.info('Henüz veri yok.')
+            else:
+                html = "<div class='bf-mini-card'>"
+                for i, (_, r) in enumerate(top.iterrows(), start=1):
+                    rank_cls = 'gold' if i == 1 else 'silver' if i == 2 else 'bronze' if i == 3 else ''
+                    val = float(r.get('Toplam K/Z TL', 0) or 0)
+                    getiri = float(r.get('Getiri %', 0) or 0)
+                    html += f"<div class='bf-winner'><div style='display:flex;align-items:center;gap:12px'><div class='bf-rank {rank_cls}'>{i}</div><div><div class='bf-winner-name'>{r.get('Varlık','-')}</div><div class='bf-winner-sub'>{r.get('Kategori','')}</div></div></div><div style='text-align:right'><div class='{ 'good' if val>=0 else 'bad' }'>{pct(getiri)}</div><div class='{ 'good' if val>=0 else 'bad' }'>{tl(val)}</div></div></div>"
+                html += "</div>"
+                st.markdown(html, unsafe_allow_html=True)
+
+        st.markdown("<div class='bf-section-title'>Hızlı İşlemler</div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class='bf-quick-grid'>
+          <div class='bf-quick-card'><div class='bf-quick-ico'>➕</div><div class='bf-quick-title'>Varlık Ekle</div><div class='bf-quick-sub'>Portföyünüze yeni varlık ekleyin</div></div>
+          <div class='bf-quick-card'><div class='bf-quick-ico'>🛒</div><div class='bf-quick-title'>Alış İşlemi</div><div class='bf-quick-sub'>Hisse, altın, döviz alışı yapın</div></div>
+          <div class='bf-quick-card'><div class='bf-quick-ico'>📈</div><div class='bf-quick-title'>Satış İşlemi</div><div class='bf-quick-sub'>Varlıklarınızı satışa çıkarın</div></div>
+          <div class='bf-quick-card'><div class='bf-quick-ico'>📒</div><div class='bf-quick-title'>İşlem Defteri</div><div class='bf-quick-sub'>Tüm işlemlerinizi görüntüleyin</div></div>
+          <div class='bf-quick-card'><div class='bf-quick-ico'>⚙️</div><div class='bf-quick-title'>Ayarlar</div><div class='bf-quick-sub'>Uygulama ayarlarını düzenleyin</div></div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.info('Portföy verileriniz Supabase ile güvenli şekilde senkronize edilir ve gerçek zamanlı güncellenir.')
 
 elif page=='💼 Portföy':
     st.header('💼 Portföyüm')
@@ -798,8 +949,8 @@ elif page=='⚙️ Ayarlar':
                 st.error(f'Bağlantı testi başarısız: {e}')
 
         st.subheader('ℹ️ Sürüm')
-        st.write('Benim Finans • MyFin • V7.4 Hawaiian Ocean')
-        st.write('Bu sürümde yeni logo, beyaz/mavi marka arayüzü, sade hamburger menü hissi ve mobil uyumlu kart yapısı kullanılır.')
+        st.write('Benim Finans • MyFin • V7.6 Premium UI')
+        st.write('Bu sürümde Hawaiian Ocean premium sidebar, genişletilmiş menü kartları, modern ana sayfa kartları ve mobil uyumlu arayüz kullanılır.')
 
     with tab_duzen:
         st.subheader('✏️ Varlık adı, kategori ve manuel fiyat düzenle')
