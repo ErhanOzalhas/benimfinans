@@ -136,6 +136,28 @@ def inject_branding():
     .bf-kpi-delta{font-size:12px;}
     @media(max-width:980px){.bf-topbar{padding:18px}.bf-status{width:100%;justify-content:flex-start}.bf-kpi-value{font-size:21px}}
 
+
+    /* V7.2 sidebar market polish */
+    [data-testid="stSidebar"] [role="radiogroup"] label{
+      background:#F3F7FF!important;
+      border:1px solid #DCEBFF!important;
+      border-radius:16px!important;
+      padding:.95rem 1rem!important;
+      margin:.35rem 0!important;
+      box-shadow:0 8px 18px rgba(20,85,217,.045)!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover{background:#EAF3FF!important;border-color:#CFE0FF!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label p{font-size:17px!important;font-weight:950!important;}
+    [data-testid="stSidebar"] [aria-checked="true"]{background:linear-gradient(135deg,#1455D9,#0B3EA8)!important;border-color:#1455D9!important;}
+    [data-testid="stSidebar"] [aria-checked="true"] p{color:white!important;}
+    .bf-side-sep{height:1px;background:#E5EAF2;margin:1.05rem 0 .9rem 0;}
+    .bf-market-title{font-size:13px;font-weight:950;color:#0F172A;margin:.25rem 0 .45rem 0;letter-spacing:.01em;}
+    .bf-market-card{background:linear-gradient(135deg,#F8FBFF,#EEF6FF);border:1px solid #DCEBFF;border-radius:15px;padding:10px 12px;margin:7px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .bf-market-name{font-size:12px;font-weight:900;color:#334155;}
+    .bf-market-val{font-size:13px;font-weight:950;color:#0B3EA8;text-align:right;}
+    .bf-market-note{font-size:10.5px;color:#64748B;line-height:1.2;margin-top:6px;}
+    .stButton>button[kind="primary"]{background:linear-gradient(135deg,#C2410C,#9A3412)!important;border:0!important;color:white!important;box-shadow:0 12px 24px rgba(194,65,12,.22)!important;}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -155,7 +177,7 @@ def render_brand_header(total, pl, pl_pct, realized, unrealized):
       <div class="bf-status">
         <div class="bf-pill"><span class="bf-dot"></span>Sistem aktif</div>
         <div class="bf-pill">Son güncelleme<br><b>{now_txt}</b></div>
-        <div class="bf-version">MyFin v7.1<br>Clean Header</div>
+        <div class="bf-version">MyFin v7.2<br>Market Sidebar</div>
       </div>
     </div>
     <div class="bf-kpi-grid">
@@ -165,7 +187,7 @@ def render_brand_header(total, pl, pl_pct, realized, unrealized):
       <div class="bf-kpi"><div><div class="bf-kpi-label">Satış Kârı</div><div class="bf-kpi-value {'good' if realized>=0 else 'bad'}">{tl(realized)}</div><div class="bf-kpi-delta">Kesinleşen sonuç</div></div><div class="bf-icon purple">▮</div></div>
     </div>
     <div class="bf-mobile-bottom">
-      <span><b>⌂</b>Ana</span><span><b>💼</b>Portföy</span><span><b>＋</b>İlk Alış</span><span><b>▤</b>İşlem</span><span><b>⚙</b>Ayarlar</span>
+      <span><b>⌂</b>Ana</span><span><b>💼</b>Portföy</span><span><b>＋</b>Varlık</span><span><b>▤</b>İşlem</span><span><b>⚙</b>Ayarlar</span>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -208,6 +230,37 @@ def money_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     if 'Getiri %' in out.columns: out['Getiri %']=out['Getiri %'].map(pct)
     return out
 
+
+def _market_price_value(symbol, category, manual=0):
+    try:
+        price, source = get_price_try(symbol, category, manual)
+        return float(price or 0), source
+    except Exception:
+        return 0.0, "-"
+
+
+def render_sidebar_market_prices():
+    usd, _ = _market_price_value('USDTRY', 'Döviz')
+    eur, _ = _market_price_value('EURTRY', 'Döviz')
+    gram, _ = _market_price_value('GRAM_ALTIN', 'Altın')
+
+    # Yaklaşık fiziki altın hesapları. Kuyumcu makası/darphane primleri dahil değildir.
+    rows = [
+        ('💵 Dolar', usd),
+        ('💶 Euro', eur),
+        ('🥇 Gram Altın', gram),
+        ('🪙 Çeyrek Altın', gram * 1.754 if gram else 0),
+        ('🟡 Tam Altın', gram * 7.016 if gram else 0),
+        ('🏛️ Cumhuriyet', gram * 7.216 if gram else 0),
+    ]
+    html = "<div class='bf-side-sep'></div><div class='bf-market-title'>Canlı Piyasa</div>"
+    for name, val in rows:
+        value = tl(val) if val else '-'
+        html += f"<div class='bf-market-card'><div class='bf-market-name'>{name}</div><div class='bf-market-val'>{value}</div></div>"
+    html += "<div class='bf-market-note'>Altın türleri gram altın üzerinden yaklaşık hesaplanır; kuyumcu alış/satış farkı dahil değildir.</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
 inject_branding(); init_db()
 
 # Uygulama açıldığında fiyatları oturum başına bir kez otomatik yenile.
@@ -220,8 +273,9 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.1</div></div></div>", unsafe_allow_html=True)
-    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
+    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.2</div></div></div>", unsafe_allow_html=True)
+    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Varlık Ekle','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
+    render_sidebar_market_prices()
 
 portfolio=build_portfolio()
 cat=category_summary()
@@ -253,7 +307,7 @@ st.divider()
 if page=='🏠 Ana Sayfa':
     st.header('🏠 Ana Sayfa')
     if cat.empty:
-        st.info('Portföy boş. 🛒 İlk Alış ekranından geçmiş tarihli ilk alımlarını girerek başlayabilirsin.')
+        st.info('Portföy boş. ➕ Varlık Ekle ekranından geçmiş tarihli ilk alımlarını girerek başlayabilirsin.')
     else:
         cols=st.columns(min(4, len(cat)))
         for i,(_,r) in enumerate(cat.sort_values('Güncel Değer TL', ascending=False).iterrows()):
@@ -353,7 +407,7 @@ elif page=='💼 Portföy':
         else:
             st.info('Henüz kayıtlı varlık yok.')
 
-elif page=='🛒 İlk Alış':
+elif page=='➕ Varlık Ekle':
     st.header('🛒 İlk Alış / Geçmiş Tarihli Alış')
 
     def otomatik_sembol(kategori, emtia):
@@ -482,7 +536,7 @@ elif page=='🛒 İlk Alış':
 
 elif page=='📒 İşlem Defteri':
     st.header('📒 İşlem Defteri')
-    st.info('Bu ekran, mevcut bir varlığa sonradan alış/satış/temettü/komisyon işlemi eklemek içindir. İlk alış için 🛒 İlk Alış ekranını kullanabilirsin.')
+    st.info('Bu ekran, mevcut bir varlığa sonradan alış/satış/temettü/komisyon işlemi eklemek içindir. İlk alış için ➕ Varlık Ekle ekranını kullanabilirsin.')
     assets=assets_df()
     if assets.empty:
         st.warning('Önce varlık ekle.')
@@ -564,7 +618,7 @@ elif page=='⚙️ Ayarlar':
                 st.error(f'Bağlantı testi başarısız: {e}')
 
         st.subheader('ℹ️ Sürüm')
-        st.write('Benim Finans • MyFin • V7.0 Brand Interface')
+        st.write('Benim Finans • MyFin • V7.2 Market Sidebar')
         st.write('Bu sürümde yeni logo, beyaz/mavi marka arayüzü, sade hamburger menü hissi ve mobil uyumlu kart yapısı kullanılır.')
 
     with tab_duzen:
