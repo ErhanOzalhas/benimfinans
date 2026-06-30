@@ -8,7 +8,7 @@ import plotly.express as px
 
 from database.db import (
     init_db, add_asset, update_asset, assets_df, transactions_df, add_transaction,
-    delete_transaction, clear_all_data, archive_asset, restore_asset, delete_asset, backend_name, using_supabase
+    delete_transaction, clear_all_data, archive_asset, restore_asset, delete_asset, backend_name, using_supabase, save_snapshot, snapshots_df
 )
 from services.prices import refresh_all_prices
 from services.portfolio_engine import build_portfolio, category_summary, date_range_analysis
@@ -61,7 +61,7 @@ inject_branding(); init_db()
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.0 Cloud DB')
+    st.caption('MyFin • V6.1 Cloud Engine')
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlemler','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
@@ -82,7 +82,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6 Cloud</div>
+  <div class='title'>Benim Finans • MyFin • V6.1 Cloud Engine</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -94,12 +94,19 @@ m2.metric('Toplam K/Z', tl(pl), pct(pl_pct))
 m3.metric('Gerçekleşmiş K/Z', tl(realized))
 m4.metric('Gerçekleşmemiş K/Z', tl(unrealized))
 
-if st.button('🔄 Anlık / Online fiyatları güncelle', type='primary', use_container_width=True):
-    with st.spinner('Online fiyat kaynakları deneniyor...'):
-        res=refresh_all_prices()
-    st.success('Fiyat yenileme tamamlandı')
-    st.dataframe(res, use_container_width=True, hide_index=True)
-    st.rerun()
+c_top1, c_top2 = st.columns(2)
+with c_top1:
+    if st.button('🔄 Anlık / Online fiyatları güncelle', type='primary', use_container_width=True):
+        with st.spinner('Online fiyat kaynakları deneniyor...'):
+            res=refresh_all_prices()
+        st.success('Fiyat yenileme tamamlandı')
+        st.dataframe(res, use_container_width=True, hide_index=True)
+        st.rerun()
+with c_top2:
+    if st.button('💾 Bugünkü portföy değerini kaydet', use_container_width=True):
+        save_snapshot(total, pl, 'Manuel günlük kayıt')
+        st.success('Bugünkü değer buluta kaydedildi.')
+        st.rerun()
 
 st.divider()
 
@@ -120,6 +127,10 @@ if page=='🏠 Ana Sayfa':
             st.subheader('En çok kazandıran/kaybettiren')
             top=portfolio.sort_values('Toplam K/Z TL', ascending=False).head(5)
             st.dataframe(money_cols(top[['Varlık','Kategori','Toplam K/Z TL','Getiri %']], ['Toplam K/Z TL']), use_container_width=True, hide_index=True)
+        snaps = snapshots_df()
+        if not snaps.empty:
+            st.subheader('Portföy geçmişi')
+            st.plotly_chart(px.line(snaps, x='snapshot_date', y='total_value_try', markers=True, title='Günlük portföy değeri'), use_container_width=True)
 
 elif page=='💼 Portföy':
     st.header('💼 Portföy Yönetimi')
@@ -241,7 +252,7 @@ elif page=='⚙️ Ayarlar':
     if using_supabase():
         st.success('Supabase aktif: Telefondan veya bilgisayardan yapılan değişiklikler bulutta kalıcı saklanır.')
     else:
-        st.warning('Supabase secrets bulunamadı. Yerel geliştirme için SQLite kullanılıyor. Online kalıcı kullanım için Streamlit Secrets içine SUPABASE_URL ve SUPABASE_KEY ekle.')
+        st.warning('Supabase secrets bulunamadı. Yerel geliştirme için SQLite kullanılıyor. Online kalıcı kullanım için Streamlit Secrets içine SUPABASE_URL ve SUPABASE_ANON_KEY ekle.')
     st.subheader('🧹 Tüm veriyi sıfırla')
     confirm=st.checkbox('Tüm portföyü, işlemleri ve fiyat önbelleğini silmeyi onaylıyorum')
     if st.button('🗑️ Tüm portföyü temizle', type='primary', disabled=not confirm):
