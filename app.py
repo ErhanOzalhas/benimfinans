@@ -61,7 +61,7 @@ inject_branding(); init_db()
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.1 Cloud Engine')
+    st.caption('MyFin • V6.2 UI Refresh')
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlemler','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
@@ -82,7 +82,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.1 Cloud Engine</div>
+  <div class='title'>Benim Finans • MyFin • V6.2 UI Refresh</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
