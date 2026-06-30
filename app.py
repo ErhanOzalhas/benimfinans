@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import date, timedelta
 import base64
+import requests
 from pathlib import Path
 import pandas as pd
 import streamlit as st
@@ -158,6 +159,68 @@ def inject_branding():
     .bf-market-note{font-size:10.5px;color:#64748B;line-height:1.2;margin-top:6px;}
     .stButton>button[kind="primary"]{background:linear-gradient(135deg,#C2410C,#9A3412)!important;border:0!important;color:white!important;box-shadow:0 12px 24px rgba(194,65,12,.22)!important;}
 
+
+
+    /* V7.3 premium navy sidebar */
+    [data-testid="stSidebar"]{
+      background:linear-gradient(180deg,#061533 0%,#071A3A 48%,#041126 100%)!important;
+      border-right:0!important;
+      box-shadow:18px 0 45px rgba(4,17,38,.16)!important;
+    }
+    [data-testid="stSidebar"] *{color:#FFFFFF!important;}
+    [data-testid="stSidebar"] [role="radiogroup"]{display:flex!important;flex-direction:column!important;gap:10px!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label{
+      width:100%!important;
+      min-height:58px!important;
+      height:58px!important;
+      box-sizing:border-box!important;
+      display:flex!important;
+      align-items:center!important;
+      background:rgba(255,255,255,.075)!important;
+      border:1px solid rgba(255,255,255,.15)!important;
+      border-radius:16px!important;
+      padding:0 16px!important;
+      margin:0!important;
+      box-shadow:none!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover{
+      background:rgba(37,99,235,.24)!important;
+      border-color:rgba(96,165,250,.45)!important;
+      transform:translateY(-1px);
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label p{
+      font-size:18px!important;
+      font-weight:950!important;
+      color:#FFFFFF!important;
+      letter-spacing:-.01em!important;
+    }
+    [data-testid="stSidebar"] [aria-checked="true"]{
+      background:linear-gradient(135deg,#1455D9,#0B3EA8)!important;
+      border-color:rgba(96,165,250,.70)!important;
+      box-shadow:0 14px 28px rgba(20,85,217,.26)!important;
+    }
+    .bf-sidebar-brand{padding:1.0rem .1rem 1.2rem .1rem!important;}
+    .bf-sidebar-title{color:#FFFFFF!important;font-size:22px!important;}
+    .bf-sidebar-sub{color:#93C5FD!important;font-size:13px!important;}
+    .bf-side-sep{height:1px;background:rgba(255,255,255,.22)!important;margin:1.25rem 0 1rem 0!important;}
+    .bf-market-title{font-size:13px!important;font-weight:950!important;color:#EAF3FF!important;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.04em;}
+    .bf-market-title span{font-size:11px!important;color:#86EFAC!important;text-transform:none;letter-spacing:0;}
+    .bf-market-card{
+      background:rgba(255,255,255,.075)!important;
+      border:1px solid rgba(255,255,255,.15)!important;
+      border-radius:16px!important;
+      padding:10px 12px!important;
+      margin:8px 0!important;
+      box-shadow:none!important;
+    }
+    .bf-market-name{font-size:12px!important;font-weight:900!important;color:#DBEAFE!important;}
+    .bf-market-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+    .bf-market-val{font-size:15px!important;font-weight:950!important;color:#FFFFFF!important;}
+    .bf-market-pct{font-size:11px!important;font-weight:950!important;}
+    .bf-market-pct.good{color:#4ADE80!important;}.bf-market-pct.bad{color:#FB7185!important;}.bf-market-pct.neutral{color:#CBD5E1!important;}
+    .bf-market-note{font-size:10.5px!important;color:#BFDBFE!important;line-height:1.25;margin-top:8px!important;}
+    .bf-logo-svg{filter:drop-shadow(0 14px 25px rgba(37,99,235,.20));}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -177,7 +240,7 @@ def render_brand_header(total, pl, pl_pct, realized, unrealized):
       <div class="bf-status">
         <div class="bf-pill"><span class="bf-dot"></span>Sistem aktif</div>
         <div class="bf-pill">Son güncelleme<br><b>{now_txt}</b></div>
-        <div class="bf-version">MyFin v7.2<br>Market Sidebar</div>
+        <div class="bf-version">MyFin v7.3<br>Premium Sidebar</div>
       </div>
     </div>
     <div class="bf-kpi-grid">
@@ -239,25 +302,71 @@ def _market_price_value(symbol, category, manual=0):
         return 0.0, "-"
 
 
+@st.cache_data(ttl=900, show_spinner=False)
+def _yahoo_now_prev(ysym):
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ysym}?range=5d&interval=1d"
+        r = requests.get(url, headers={"User-Agent":"Mozilla/5.0"}, timeout=6)
+        r.raise_for_status()
+        data = r.json()["chart"]["result"][0]
+        closes = [x for x in data["indicators"]["quote"][0].get("close", []) if x is not None]
+        now = data.get("meta", {}).get("regularMarketPrice") or (closes[-1] if closes else None)
+        prev = closes[-2] if len(closes) >= 2 else None
+        if now is None or prev in (None, 0):
+            return None, None, None
+        pct_change = (float(now) - float(prev)) / float(prev) * 100
+        return float(now), float(prev), pct_change
+    except Exception:
+        return None, None, None
+
+
+def _market_quote(symbol, category):
+    price, _ = _market_price_value(symbol, category)
+    pct_change = None
+    try:
+        if symbol == 'USDTRY':
+            _, _, pct_change = _yahoo_now_prev('USDTRY=X')
+        elif symbol == 'EURTRY':
+            _, _, pct_change = _yahoo_now_prev('EURTRY=X')
+        elif symbol == 'GRAM_ALTIN':
+            gc_now, gc_prev, _ = _yahoo_now_prev('GC=F')
+            usd_now, usd_prev, _ = _yahoo_now_prev('USDTRY=X')
+            if gc_now and gc_prev and usd_now and usd_prev:
+                gram_now = gc_now * usd_now / 31.1034768
+                gram_prev = gc_prev * usd_prev / 31.1034768
+                pct_change = (gram_now - gram_prev) / gram_prev * 100 if gram_prev else None
+    except Exception:
+        pct_change = None
+    return price, pct_change
+
+
+def _pct_badge(pct_value):
+    if pct_value is None:
+        return "<span class='bf-market-pct neutral'>—</span>"
+    cls = 'good' if pct_value >= 0 else 'bad'
+    arrow = '↗' if pct_value >= 0 else '↘'
+    return f"<span class='bf-market-pct {cls}'>{arrow} {pct(pct_value)}</span>"
+
+
 def render_sidebar_market_prices():
-    usd, _ = _market_price_value('USDTRY', 'Döviz')
-    eur, _ = _market_price_value('EURTRY', 'Döviz')
-    gram, _ = _market_price_value('GRAM_ALTIN', 'Altın')
+    usd, usd_pct = _market_quote('USDTRY', 'Döviz')
+    eur, eur_pct = _market_quote('EURTRY', 'Döviz')
+    gram, gram_pct = _market_quote('GRAM_ALTIN', 'Altın')
 
     # Yaklaşık fiziki altın hesapları. Kuyumcu makası/darphane primleri dahil değildir.
     rows = [
-        ('💵 Dolar', usd),
-        ('💶 Euro', eur),
-        ('🥇 Gram Altın', gram),
-        ('🪙 Çeyrek Altın', gram * 1.754 if gram else 0),
-        ('🟡 Tam Altın', gram * 7.016 if gram else 0),
-        ('🏛️ Cumhuriyet', gram * 7.216 if gram else 0),
+        ('💵 Dolar', usd, usd_pct),
+        ('💶 Euro', eur, eur_pct),
+        ('🥇 Gram Altın', gram, gram_pct),
+        ('🪙 Çeyrek Altın', gram * 1.754 if gram else 0, gram_pct),
+        ('🟡 Tam Altın', gram * 7.016 if gram else 0, gram_pct),
+        ('🏛️ Cumhuriyet', gram * 7.216 if gram else 0, gram_pct),
     ]
-    html = "<div class='bf-side-sep'></div><div class='bf-market-title'>Canlı Piyasa</div>"
-    for name, val in rows:
+    html = "<div class='bf-side-sep'></div><div class='bf-market-title'>Canlı Piyasa <span>● Canlı</span></div>"
+    for name, val, pct_val in rows:
         value = tl(val) if val else '-'
-        html += f"<div class='bf-market-card'><div class='bf-market-name'>{name}</div><div class='bf-market-val'>{value}</div></div>"
-    html += "<div class='bf-market-note'>Altın türleri gram altın üzerinden yaklaşık hesaplanır; kuyumcu alış/satış farkı dahil değildir.</div>"
+        html += f"<div class='bf-market-card'><div class='bf-market-name'>{name}</div><div class='bf-market-right'>{_pct_badge(pct_val)}<div class='bf-market-val'>{value}</div></div></div>"
+    html += "<div class='bf-market-note'>Yüzdeler yaklaşık günlük değişimdir. Fiziki altınlarda kuyumcu alış/satış farkı dahil değildir.</div>"
     st.markdown(html, unsafe_allow_html=True)
 
 
@@ -273,7 +382,7 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.2</div></div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.3</div></div></div>", unsafe_allow_html=True)
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Varlık Ekle','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
     render_sidebar_market_prices()
 
@@ -618,7 +727,7 @@ elif page=='⚙️ Ayarlar':
                 st.error(f'Bağlantı testi başarısız: {e}')
 
         st.subheader('ℹ️ Sürüm')
-        st.write('Benim Finans • MyFin • V7.2 Market Sidebar')
+        st.write('Benim Finans • MyFin • V7.2 Premium Sidebar')
         st.write('Bu sürümde yeni logo, beyaz/mavi marka arayüzü, sade hamburger menü hissi ve mobil uyumlu kart yapısı kullanılır.')
 
     with tab_duzen:
