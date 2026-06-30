@@ -117,12 +117,30 @@ def inject_branding():
       .bf-mobile-bottom b{font-size:18px;display:block;margin-bottom:2px;color:#1455D9;}
     }
 
+
+    /* V7.1 visual polish */
+    [data-testid="stSidebar"] [role="radiogroup"] label p{font-size:17px!important;font-weight:900!important;letter-spacing:-.01em!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label{padding:.86rem .95rem!important;margin:.28rem 0!important;}
+    .bf-sidebar-title{font-size:20px!important;}
+    .bf-sidebar-sub{font-size:13px!important;}
+    .bf-topbar{background:linear-gradient(135deg,#FFFFFF 0%,#F7FAFF 100%);border:1px solid #E5EAF2;border-radius:28px;padding:22px 24px;box-shadow:0 18px 45px rgba(15,23,42,.055);margin:2px 0 18px 0;}
+    .bf-brand{gap:18px;}
+    .bf-logo-svg svg{border-radius:24px;}
+    .bf-subtitle{font-size:16px;}
+    .bf-status{gap:10px;align-items:center;}
+    .bf-pill{padding:10px 13px;font-size:13px;box-shadow:none;background:#FFFFFF;}
+    .bf-version{padding:10px 13px;font-size:13px;box-shadow:none;}
+    .bf-kpi-grid{margin-top:12px;}
+    .bf-kpi{min-height:104px;padding:16px 18px;}
+    .bf-kpi-value{font-size:25px;line-height:1.15;}
+    .bf-kpi-delta{font-size:12px;}
+    @media(max-width:980px){.bf-topbar{padding:18px}.bf-status{width:100%;justify-content:flex-start}.bf-kpi-value{font-size:21px}}
+
     </style>
     """, unsafe_allow_html=True)
 
 
 def render_brand_header(total, pl, pl_pct, realized, unrealized):
-    status = 'Supabase bağlı' if using_supabase() else 'Yerel test modu'
     now_txt = pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')
     logo = bf_logo_html(78)
     st.markdown(f'''
@@ -132,25 +150,19 @@ def render_brand_header(total, pl, pl_pct, realized, unrealized):
         <div>
           <div class="bf-title">Benim <span>Finans</span></div>
           <div class="bf-subtitle">Akıllı yatırım takibi, net sonuçlar.</div>
-          <div class="bf-hero-badges">
-            <span class="bf-hero-badge">☁️ Cloud</span>
-            <span class="bf-hero-badge">🟢 {status}</span>
-            <span class="bf-hero-badge">⚡ Gerçek zamanlı fiyatlar</span>
-            <span class="bf-hero-badge">🔒 Kişisel portföy</span>
-          </div>
         </div>
       </div>
       <div class="bf-status">
-        <div class="bf-pill"><span class="bf-dot"></span>Sistem Aktif</div>
-        <div class="bf-pill">🕘 Son güncelleme<br><b>{now_txt}</b></div>
-        <div class="bf-version">MyFin v7.0<br>Brand Interface</div>
+        <div class="bf-pill"><span class="bf-dot"></span>Sistem aktif</div>
+        <div class="bf-pill">Son güncelleme<br><b>{now_txt}</b></div>
+        <div class="bf-version">MyFin v7.1<br>Clean Header</div>
       </div>
     </div>
     <div class="bf-kpi-grid">
-      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Portföy Değeri</div><div class="bf-kpi-value">{tl(total)}</div><div class="bf-kpi-delta {'good' if pl>=0 else 'bad'}">{pct(pl_pct)} ({tl(pl)})</div></div><div class="bf-icon">💼</div></div>
-      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Yatırım</div><div class="bf-kpi-value">{tl(max(total-pl,0))}</div><div class="bf-kpi-delta">{status}</div></div><div class="bf-icon gold">🪙</div></div>
-      <div class="bf-kpi"><div><div class="bf-kpi-label">Bekleyen Kâr</div><div class="bf-kpi-value {'good' if unrealized>=0 else 'bad'}">{tl(unrealized)}</div><div class="bf-kpi-delta {'good' if unrealized>=0 else 'bad'}">📈 Portföyde bekleyen</div></div><div class="bf-icon green">↗</div></div>
-      <div class="bf-kpi"><div><div class="bf-kpi-label">Satış Kârı</div><div class="bf-kpi-value {'good' if realized>=0 else 'bad'}">{tl(realized)}</div><div class="bf-kpi-delta">💵 Kesinleşen sonuç</div></div><div class="bf-icon purple">▮</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Portföy</div><div class="bf-kpi-value">{tl(total)}</div><div class="bf-kpi-delta {'good' if pl>=0 else 'bad'}">{pct(pl_pct)} · {tl(pl)}</div></div><div class="bf-icon">💼</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Yatırım</div><div class="bf-kpi-value">{tl(max(total-pl,0))}</div><div class="bf-kpi-delta">Maliyet bazlı</div></div><div class="bf-icon gold">🪙</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Bekleyen Kâr</div><div class="bf-kpi-value {'good' if unrealized>=0 else 'bad'}">{tl(unrealized)}</div><div class="bf-kpi-delta {'good' if unrealized>=0 else 'bad'}">Portföyde bekleyen</div></div><div class="bf-icon green">↗</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Satış Kârı</div><div class="bf-kpi-value {'good' if realized>=0 else 'bad'}">{tl(realized)}</div><div class="bf-kpi-delta">Kesinleşen sonuç</div></div><div class="bf-icon purple">▮</div></div>
     </div>
     <div class="bf-mobile-bottom">
       <span><b>⌂</b>Ana</span><span><b>💼</b>Portföy</span><span><b>＋</b>İlk Alış</span><span><b>▤</b>İşlem</span><span><b>⚙</b>Ayarlar</span>
@@ -208,10 +220,8 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.0</div></div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.1</div></div></div>", unsafe_allow_html=True)
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
-    st.divider()
-    st.markdown("<div style='font-size:12px;color:#64748B;font-weight:800;line-height:1.6'>☁️ Supabase<br>🟢 Bağlı<br><br>Fiyat yenileme ana sayfadaki butondan yapılır.</div>", unsafe_allow_html=True)
 
 portfolio=build_portfolio()
 cat=category_summary()
