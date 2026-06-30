@@ -221,6 +221,77 @@ def inject_branding():
     .bf-market-note{font-size:10.5px!important;color:#BFDBFE!important;line-height:1.25;margin-top:8px!important;}
     .bf-logo-svg{filter:drop-shadow(0 14px 25px rgba(37,99,235,.20));}
 
+
+
+    /* V7.4 Hawaiian Ocean sidebar refinement */
+    :root{--bf-ocean:#008DB9;--bf-ocean-dark:#006B93;--bf-ocean-light:#17B6D2;}
+    [data-testid="stSidebar"]{
+      background:linear-gradient(180deg,#008DB9 0%,#0087B0 48%,#006B93 100%)!important;
+      border-right:0!important;
+      box-shadow:18px 0 45px rgba(0,107,147,.18)!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"]{gap:10px!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label,
+    .bf-market-card{
+      width:100%!important;
+      height:64px!important;
+      min-height:64px!important;
+      box-sizing:border-box!important;
+      border-radius:16px!important;
+      background:rgba(255,255,255,.10)!important;
+      border:1px solid rgba(255,255,255,.42)!important;
+      box-shadow:0 12px 22px rgba(0,78,112,.08)!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label{
+      display:flex!important;
+      align-items:center!important;
+      padding:0 18px!important;
+      margin:0!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover{
+      background:rgba(255,255,255,.18)!important;
+      border-color:rgba(255,255,255,.70)!important;
+      transform:translateY(-1px);
+    }
+    [data-testid="stSidebar"] [aria-checked="true"]{
+      background:rgba(255,255,255,.22)!important;
+      border-color:rgba(255,255,255,.85)!important;
+      box-shadow:0 14px 30px rgba(0,66,96,.18)!important;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label p{
+      font-size:20px!important;
+      font-weight:500!important;
+      color:#FFFFFF!important;
+      letter-spacing:-.01em!important;
+    }
+    .bf-sidebar-title{font-size:25px!important;font-weight:700!important;color:#FFFFFF!important;}
+    .bf-sidebar-sub{font-size:15px!important;font-weight:400!important;color:#E0F7FF!important;}
+    .bf-side-sep{background:rgba(255,255,255,.55)!important;margin:1.2rem 0 1rem 0!important;}
+    .bf-market-title{
+      font-size:17px!important;
+      font-weight:500!important;
+      color:#FFFFFF!important;
+      text-transform:uppercase;
+      letter-spacing:.02em!important;
+      margin-bottom:10px!important;
+    }
+    .bf-market-title span{font-size:13px!important;font-weight:400!important;color:#D6FFEA!important;}
+    .bf-market-card{
+      display:flex!important;
+      align-items:center!important;
+      justify-content:space-between!important;
+      padding:10px 13px!important;
+      margin:8px 0!important;
+    }
+    .bf-market-name{font-size:15px!important;font-weight:400!important;color:#FFFFFF!important;line-height:1.15!important;}
+    .bf-market-right{display:flex!important;flex-direction:column!important;align-items:flex-end!important;justify-content:center!important;gap:2px!important;}
+    .bf-market-val{font-size:21px!important;font-weight:500!important;color:#FFFFFF!important;line-height:1.05!important;}
+    .bf-market-pct{font-size:14px!important;font-weight:400!important;line-height:1.05!important;}
+    .bf-market-pct.good{color:#D8FF80!important;}.bf-market-pct.bad{color:#FFE0E0!important;}.bf-market-pct.neutral{color:#E0F7FF!important;}
+    .bf-market-note{font-size:12px!important;font-weight:400!important;color:#E0F7FF!important;}
+    .bf-logo-svg{filter:drop-shadow(0 16px 26px rgba(0,107,147,.20));}
+    .stButton>button[kind="primary"]{background:linear-gradient(135deg,#C2410C,#9A3412)!important;border:0!important;color:white!important;box-shadow:0 12px 24px rgba(194,65,12,.22)!important;}
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -240,7 +311,7 @@ def render_brand_header(total, pl, pl_pct, realized, unrealized):
       <div class="bf-status">
         <div class="bf-pill"><span class="bf-dot"></span>Sistem aktif</div>
         <div class="bf-pill">Son güncelleme<br><b>{now_txt}</b></div>
-        <div class="bf-version">MyFin v7.3<br>Premium Sidebar</div>
+        <div class="bf-version">MyFin v7.4<br>Hawaiian Ocean</div>
       </div>
     </div>
     <div class="bf-kpi-grid">
@@ -382,7 +453,7 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.3</div></div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.4</div></div></div>", unsafe_allow_html=True)
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Varlık Ekle','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
     render_sidebar_market_prices()
 
@@ -727,7 +798,7 @@ elif page=='⚙️ Ayarlar':
                 st.error(f'Bağlantı testi başarısız: {e}')
 
         st.subheader('ℹ️ Sürüm')
-        st.write('Benim Finans • MyFin • V7.2 Premium Sidebar')
+        st.write('Benim Finans • MyFin • V7.4 Hawaiian Ocean')
         st.write('Bu sürümde yeni logo, beyaz/mavi marka arayüzü, sade hamburger menü hissi ve mobil uyumlu kart yapısı kullanılır.')
 
     with tab_duzen:
