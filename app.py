@@ -10,7 +10,7 @@ from database.db import (
     init_db, add_asset, update_asset, assets_df, transactions_df, add_transaction,
     delete_transaction, clear_all_data, archive_asset, restore_asset, delete_asset, backend_name, using_supabase, save_snapshot, snapshots_df
 )
-from services.prices import refresh_all_prices
+from services.prices import refresh_all_prices, get_price_try
 from services.portfolio_engine import build_portfolio, category_summary, date_range_analysis
 
 st.set_page_config(page_title='Benim Finans', page_icon='💼', layout='wide')
@@ -61,7 +61,7 @@ inject_branding(); init_db()
 
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.2 UI Refresh')
+    st.caption('MyFin • V6.3 Currency Entry')
     page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlemler','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
@@ -82,7 +82,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.2 UI Refresh</div>
+  <div class='title'>Benim Finans • MyFin • V6.1 Cloud Engine</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -189,6 +189,13 @@ elif page=='➕ Yeni Varlık':
 
         return e
 
+    def kur_sembolu(para_birimi):
+        if para_birimi == 'USD':
+            return 'USDTRY'
+        if para_birimi == 'EUR':
+            return 'EURTRY'
+        return None
+
     with st.form('new_asset'):
         c1, c2 = st.columns(2)
         with c1:
@@ -202,28 +209,81 @@ elif page=='➕ Yeni Varlık':
         with c4:
             adet = st.number_input('Adet / Gram',min_value=0.0,value=0.0,step=0.01,format='%.6f')
         with c5:
-            alis_fiyati = st.number_input('Alış fiyatı TL',min_value=0.0,value=0.0,step=0.01)
+            para_birimi = st.selectbox('Alış para birimi', ['TRY','USD','EUR'], index=0)
+
+        bugun = date.today()
+        eski_tarih = alis_tarihi < bugun
 
         c6, c7 = st.columns(2)
         with c6:
-            komisyon = st.number_input('Komisyon TL',min_value=0.0,value=0.0,step=0.01)
+            alis_fiyati_orijinal = st.number_input(
+                f'Alış fiyatı ({para_birimi})',
+                min_value=0.0,
+                value=0.0,
+                step=0.01,
+                help='ABD hisselerinde USD, Avrupa varlıklarında EUR, yerel varlıklarda TRY girilebilir.'
+            )
         with c7:
-            manuel_fiyat = st.number_input('Manuel güncel fiyat TL',min_value=0.0,value=0.0,step=0.01)
+            komisyon = st.number_input('Komisyon TL',min_value=0.0,value=0.0,step=0.01, help='Alışta maliyete eklenir.')
 
-        not_alani = st.text_input('Not')
+        manuel_tl = 0.0
+        kur_bilgisi = ''
+        if para_birimi != 'TRY':
+            if eski_tarih:
+                st.warning('Eski tarihli USD/EUR işlemlerde bugünkü kur kullanılmaz. Lütfen o tarihteki TL karşılığını manuel gir.')
+                manuel_tl = st.number_input('Alış fiyatı TL manuel', min_value=0.0, value=0.0, step=0.01)
+                kur_bilgisi = 'Manuel tarihsel TL fiyat kullanıldı'
+            else:
+                fx_symbol = kur_sembolu(para_birimi)
+                try:
+                    kur, kaynak = get_price_try(fx_symbol, 'Döviz', 0)
+                    kur_bilgisi = f'{para_birimi}/TRY güncel kur: {kur:,.4f} ({kaynak})'
+                    st.info(kur_bilgisi)
+                except Exception:
+                    kur = 0
+                    st.warning('Güncel kur alınamadı. TL karşılığı manuel girilebilir.')
+                    manuel_tl = st.number_input('Alış fiyatı TL manuel', min_value=0.0, value=0.0, step=0.01)
+        else:
+            kur = 1
+
+        c8, c9 = st.columns(2)
+        with c8:
+            manuel_fiyat = st.number_input('Manuel güncel fiyat TL',min_value=0.0,value=0.0,step=0.01)
+        with c9:
+            not_alani = st.text_input('Not')
 
         if st.form_submit_button('✅ Kaydet', type='primary'):
             if not emtia:
                 st.error('Emtia / varlık adı gerekli.')
             elif adet <= 0:
                 st.error('Adet / gram 0’dan büyük olmalı.')
-            elif alis_fiyati <= 0:
+            elif alis_fiyati_orijinal <= 0:
                 st.error('Alış fiyatı girilmeli.')
             else:
+                if para_birimi == 'TRY':
+                    alis_fiyati_tl = alis_fiyati_orijinal
+                elif eski_tarih:
+                    if manuel_tl <= 0:
+                        st.error('Eski tarihli USD/EUR işlem için manuel TL alış fiyatı girilmeli.')
+                        st.stop()
+                    alis_fiyati_tl = manuel_tl
+                else:
+                    if kur <= 0:
+                        if manuel_tl <= 0:
+                            st.error('Kur alınamadı. Manuel TL fiyat girilmeli.')
+                            st.stop()
+                        alis_fiyati_tl = manuel_tl
+                    else:
+                        alis_fiyati_tl = alis_fiyati_orijinal * kur
+
                 sembol = otomatik_sembol(kategori, emtia)
+                detay_not = not_alani or ''
+                if para_birimi != 'TRY':
+                    detay_not = (detay_not + ' | ' if detay_not else '') + f'Alış: {alis_fiyati_orijinal} {para_birimi}; TL fiyat: {alis_fiyati_tl:.2f}; {kur_bilgisi}'
+
                 add_asset(emtia, sembol, kategori, manual_price_try=manuel_fiyat)
-                add_transaction(alis_tarihi, sembol, 'Alış', adet, alis_fiyati, komisyon, not_alani)
-                st.success(f'{emtia} kaydedildi. Otomatik sembol: {sembol}')
+                add_transaction(alis_tarihi, sembol, 'Alış', adet, alis_fiyati_tl, komisyon, detay_not)
+                st.success(f'{emtia} kaydedildi. Otomatik sembol: {sembol}. Alış fiyatı TL: {alis_fiyati_tl:,.2f}')
                 st.rerun()
 
 elif page=='💳 İşlemler':
