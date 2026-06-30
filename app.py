@@ -81,10 +81,19 @@ def money_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
 
 inject_branding(); init_db()
 
+# Uygulama açıldığında fiyatları oturum başına bir kez otomatik yenile.
+# Manuel yenileme butonu ayrıca kalır.
+if 'auto_price_refresh_done' not in st.session_state:
+    st.session_state.auto_price_refresh_done = True
+    try:
+        refresh_all_prices()
+    except Exception as e:
+        st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
+
 with st.sidebar:
     st.title('💼 Benim Finans')
-    st.caption('MyFin • V6.4 TR Decimal Entry')
-    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlemler','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
+    st.caption('MyFin • V6.5 Portfolio Experience')
+    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','➕ Yeni Varlık','💳 İşlem Defteri','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
     if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
         with st.spinner('Fiyat kaynakları deneniyor...'):
@@ -104,7 +113,7 @@ unrealized=float(portfolio['Gerçekleşmemiş K/Z TL'].sum()) if not portfolio.e
 
 st.markdown(f"""
 <div class='hero'>
-  <div class='title'>Benim Finans • MyFin • V6.4 TR Decimal Entry</div>
+  <div class='title'>Benim Finans • MyFin • V6.5 Portfolio Experience</div>
   <div class='value'>{tl(total)}</div>
   <div class='sub'>Toplam K/Z: <span class='{ 'good' if pl>=0 else 'bad' }'>{tl(pl)} ({pct(pl_pct)})</span></div>
 </div>
@@ -155,37 +164,86 @@ if page=='🏠 Ana Sayfa':
             st.plotly_chart(px.line(snaps, x='snapshot_date', y='total_value_try', markers=True, title='Günlük portföy değeri'), use_container_width=True)
 
 elif page=='💼 Portföy':
-    st.header('💼 Portföy Yönetimi')
-    st.caption('Portföy işlem geçmişinden hesaplanır. Ürünleri tek tek arşivleyebilir veya tüm işlem geçmişiyle birlikte silebilirsin.')
-    if portfolio.empty:
-        st.info('Portföy boş.')
-    else:
-        show=money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Toplam Alış TL','Toplam Satış TL'])
-        st.dataframe(show, use_container_width=True, hide_index=True)
+    st.header('💼 Portföyüm')
+    st.caption('Portföy işlem geçmişinden hesaplanır. Önce kategori özetini, sonra varlık detaylarını görebilirsin.')
 
-    st.subheader('Varlık bilgilerini düzenle')
-    assets=assets_df(active_only=False, include_archived=True)
-    if not assets.empty:
-        edit_cols=['name','symbol','category','manual_price_try','active','archived']
-        edited=st.data_editor(assets[edit_cols], use_container_width=True, disabled=['symbol'], num_rows='fixed')
-        if st.button('💾 Varlık bilgilerini kaydet'):
-            for _,r in edited.iterrows():
-                update_asset(r['symbol'], r['name'], r['category'], r['manual_price_try'], r['active'])
-                if bool(r.get('archived',0)): archive_asset(r['symbol'])
-                else: restore_asset(r['symbol'])
-            st.success('Kaydedildi'); st.rerun()
+    tab_kat, tab_varlik, tab_yonet = st.tabs(['📊 Kategori Özeti', '📄 Varlık Detayı', '⚙️ Varlık Yönetimi'])
 
-        st.subheader('🗑️ Ürün sil / arşivle')
-        c1,c2=st.columns(2)
-        sym=c1.selectbox('Ürün seç', assets['symbol'].tolist(), format_func=lambda s: f"{assets[assets.symbol==s].iloc[0]['name']} ({s})")
-        mode=c2.radio('İşlem', ['Arşivle', 'Kalıcı sil'], horizontal=True)
-        confirm=st.checkbox(f'{sym} için işlemi onaylıyorum')
-        if st.button('Uygula', disabled=not confirm):
-            if mode=='Arşivle': archive_asset(sym); st.success(f'{sym} arşivlendi.')
-            else: delete_asset(sym, delete_transactions=True); st.success(f'{sym} ve işlem geçmişi silindi.')
-            st.rerun()
-    else:
-        st.info('Henüz kayıtlı varlık yok.')
+    with tab_kat:
+        if cat.empty:
+            st.info('Kategori özeti için önce varlık eklemelisin.')
+        else:
+            ikonlar = {
+                'Altın': '🥇 Altın',
+                'Döviz': '💵 Döviz',
+                'BIST': '🇹🇷 BIST',
+                'BIST Hisse': '🇹🇷 BIST',
+                'ABD Hisse': '🇺🇸 ABD Hisse',
+                'Kripto': '₿ Kripto',
+                'Fon': '📊 Fon',
+                'BES': '🏦 BES',
+                'Diğer': '📦 Diğer',
+            }
+            cat_show = cat.copy()
+            cat_show['Kategori'] = cat_show['Kategori'].map(lambda x: ikonlar.get(str(x), str(x)))
+            if 'Kalan Maliyet TL' in cat_show.columns and 'Güncel Değer TL' in cat_show.columns:
+                cat_show['Getiri %'] = cat_show.apply(
+                    lambda r: (float(r.get('Toplam K/Z TL', 0)) / float(r.get('Kalan Maliyet TL', 0)) * 100) if float(r.get('Kalan Maliyet TL', 0) or 0) else 0,
+                    axis=1,
+                )
+
+            k1, k2, k3 = st.columns(3)
+            biggest = cat.sort_values('Güncel Değer TL', ascending=False).iloc[0] if not cat.empty else None
+            best = cat.sort_values('Toplam K/Z TL', ascending=False).iloc[0] if not cat.empty else None
+            k1.metric('Toplam Portföy', tl(total))
+            k2.metric('En büyük kategori', biggest['Kategori'] if biggest is not None else '-')
+            k3.metric('En çok kazandıran kategori', best['Kategori'] if best is not None else '-')
+
+            cols_to_show = [c for c in ['Kategori','Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Getiri %'] if c in cat_show.columns]
+            st.dataframe(
+                money_cols(cat_show[cols_to_show], ['Güncel Değer TL','Kalan Maliyet TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']),
+                use_container_width=True,
+                hide_index=True,
+            )
+            st.plotly_chart(px.pie(cat, values='Güncel Değer TL', names='Kategori', hole=.55, title='Kategori Dağılımı'), use_container_width=True)
+
+    with tab_varlik:
+        if portfolio.empty:
+            st.info('Portföy boş.')
+        else:
+            compact_cols = [c for c in ['Varlık','Sembol','Kategori','Miktar','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Getiri %'] if c in portfolio.columns]
+            show = money_cols(portfolio[compact_cols], ['Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL'])
+            st.dataframe(show, use_container_width=True, hide_index=True)
+
+            with st.expander('Detaylı portföy tablosu'):
+                detay = money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL','Toplam Alış TL','Toplam Satış TL'])
+                st.dataframe(detay, use_container_width=True, hide_index=True)
+
+    with tab_yonet:
+        st.subheader('Varlık bilgilerini düzenle')
+        assets=assets_df(active_only=False, include_archived=True)
+        if not assets.empty:
+            edit_cols=['name','symbol','category','manual_price_try','active','archived']
+            edited=st.data_editor(assets[edit_cols], use_container_width=True, disabled=['symbol'], num_rows='fixed')
+            if st.button('💾 Varlık bilgilerini kaydet'):
+                for _,r in edited.iterrows():
+                    update_asset(r['symbol'], r['name'], r['category'], r['manual_price_try'], r['active'])
+                    if bool(r.get('archived',0)): archive_asset(r['symbol'])
+                    else: restore_asset(r['symbol'])
+                st.success('Kaydedildi'); st.rerun()
+
+            st.subheader('🗑️ Ürün sil / arşivle')
+            c1,c2=st.columns(2)
+            sym=c1.selectbox('Ürün seç', assets['symbol'].tolist(), format_func=lambda s: f"{assets[assets.symbol==s].iloc[0]['name']} ({s})")
+            mode=c2.radio('İşlem', ['Arşivle', 'Kalıcı sil'], horizontal=True)
+            confirm=st.checkbox(f'{sym} için işlemi onaylıyorum')
+            if st.button('Uygula', disabled=not confirm):
+                if mode=='Arşivle': archive_asset(sym); st.success(f'{sym} arşivlendi.')
+                else: delete_asset(sym, delete_transactions=True); st.success(f'{sym} ve işlem geçmişi silindi.')
+                st.rerun()
+        else:
+            st.info('Henüz kayıtlı varlık yok.')
+
 elif page=='➕ Yeni Varlık':
     st.header('➕ Yeni Varlık / Geçmiş Tarihli Alış')
 
@@ -267,8 +325,8 @@ elif page=='➕ Yeni Varlık':
                 except Exception:
                     kur = 0
                     st.warning('Güncel kur alınamadı. TL karşılığı manuel girilebilir.')
-                    manuel_tl_txt = tr_amount_input('Alış fiyatı TL manuel', 'new_manuel_tl_eski', '0,00')
-                manuel_tl = parse_tr_number(manuel_tl_txt)
+                    manuel_tl_txt = tr_amount_input('Alış fiyatı TL manuel', 'new_manuel_tl_kur_yok', '0,00')
+                    manuel_tl = parse_tr_number(manuel_tl_txt)
         else:
             kur = 1
 
@@ -313,8 +371,9 @@ elif page=='➕ Yeni Varlık':
                 st.success(f'{emtia} kaydedildi. Otomatik sembol: {sembol}. Alış fiyatı TL: {alis_fiyati_tl:,.2f}')
                 st.rerun()
 
-elif page=='💳 İşlemler':
-    st.header('💳 İşlem Ekle ve Yönet')
+elif page=='💳 İşlem Defteri':
+    st.header('💳 İşlem Defteri')
+    st.info('Bu ekran, mevcut bir varlığa sonradan alış/satış/temettü/komisyon işlemi eklemek içindir. İlk alış için ➕ Yeni Varlık ekranını kullanabilirsin.')
     assets=assets_df()
     if assets.empty:
         st.warning('Önce varlık ekle.')
