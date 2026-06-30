@@ -16,6 +16,28 @@ from services.portfolio_engine import build_portfolio, category_summary, date_ra
 st.set_page_config(page_title='Benim Finans', page_icon='💼', layout='wide')
 
 
+BF_LOGO_SVG = """
+<svg viewBox="0 0 96 96" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Benim Finans logo">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#061533"/><stop offset="1" stop-color="#1455D9"/></linearGradient>
+    <linearGradient id="bar" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset="1" stop-color="#2563EB"/></linearGradient>
+    <linearGradient id="arrow" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stop-color="#16A34A"/><stop offset="1" stop-color="#84CC16"/></linearGradient>
+  </defs>
+  <rect x="5" y="5" width="86" height="86" rx="22" fill="url(#bg)"/>
+  <rect x="24" y="50" width="11" height="24" rx="4" fill="url(#bar)"/>
+  <rect x="41" y="38" width="11" height="36" rx="4" fill="url(#bar)"/>
+  <rect x="58" y="25" width="11" height="49" rx="4" fill="url(#bar)"/>
+  <path d="M20 72 C38 65, 53 52, 72 25" fill="none" stroke="url(#arrow)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M70 18 L82 18 L82 30" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M72 24 L82 18" fill="none" stroke="white" stroke-width="6" stroke-linecap="round"/>
+</svg>
+"""
+
+
+def bf_logo_html(size=74):
+    return f"<div class='bf-logo-svg' style='width:{size}px;height:{size}px'>{BF_LOGO_SVG}</div>"
+
+
 def inject_branding():
     """Benim Finans V6.8 görsel kimliği: beyaz zemin, lacivert/mavi marka dili, mobil uyumlu kartlar."""
     logo = Path('assets/logo.svg')
@@ -70,6 +92,31 @@ def inject_branding():
     div[data-testid="stMetricValue"]{color:var(--bf-navy)!important;font-weight:950!important}
     @media(max-width: 980px){.main .block-container{padding-left:.85rem;padding-right:.85rem}.bf-topbar{align-items:flex-start;flex-direction:column}.bf-logo{width:58px;height:58px;border-radius:18px;font-size:30px}.bf-title{font-size:34px}.bf-status{justify-content:flex-start;gap:10px}.bf-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bf-kpi{padding:14px;min-height:98px;border-radius:18px}.bf-kpi-value{font-size:22px}.bf-icon{width:42px;height:42px;border-radius:13px;font-size:21px}}
     @media(max-width: 560px){.bf-kpi-grid{grid-template-columns:1fr 1fr}.bf-title{font-size:29px}.bf-subtitle{font-size:13px}.bf-pill,.bf-version{font-size:12px;padding:7px 10px}[data-testid="stSidebar"]{width:15rem!important}}
+
+    .bf-logo-svg{display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 14px 25px rgba(20,85,217,.18));}
+    .bf-logo-svg svg{display:block;border-radius:22px;}
+    .bf-hero-badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+    .bf-hero-badge{background:#F3F7FF;border:1px solid #DDEAFF;color:#0B3EA8;border-radius:999px;padding:7px 10px;font-weight:850;font-size:12px;}
+    .bf-title{background:linear-gradient(90deg,#071A3A 0%,#1455D9 74%);-webkit-background-clip:text;background-clip:text;color:transparent!important;}
+    .bf-title span{color:inherit!important;}
+    .bf-kpi{transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;}
+    .bf-kpi:hover{transform:translateY(-3px);box-shadow:0 18px 42px rgba(20,85,217,.12);border-color:#CFE0FF;}
+    .bf-card{transition:transform .18s ease, box-shadow .18s ease;}
+    .bf-card:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(15,23,42,.08);}
+    [data-testid="stSidebar"]{min-width:248px;}
+    [data-testid="stSidebar"] [role="radiogroup"] label > div:first-child{display:none!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label{border-radius:14px!important;padding:.72rem .85rem!important;margin:.20rem 0!important;border:1px solid transparent!important;}
+    [data-testid="stSidebar"] [role="radiogroup"] label p{font-weight:850!important;font-size:15px!important;}
+    [data-testid="stSidebar"] [aria-checked="true"]{background:linear-gradient(135deg,#1455D9,#0B3EA8)!important;border-radius:14px!important;box-shadow:0 14px 28px rgba(20,85,217,.18)!important;}
+    .bf-mobile-bottom{display:none;}
+    @media(max-width: 760px){
+      [data-testid="stSidebar"]{display:none!important;}
+      .main .block-container{padding-top:.75rem!important;padding-bottom:5rem!important;}
+      .bf-mobile-bottom{display:flex;position:fixed;left:10px;right:10px;bottom:10px;background:white;border:1px solid #E5EAF2;border-radius:22px;box-shadow:0 12px 30px rgba(15,23,42,.16);z-index:9999;justify-content:space-around;padding:8px 6px;}
+      .bf-mobile-bottom span{font-size:11px;font-weight:800;color:#0F172A;text-align:center;line-height:1.15;}
+      .bf-mobile-bottom b{font-size:18px;display:block;margin-bottom:2px;color:#1455D9;}
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -77,26 +124,38 @@ def inject_branding():
 def render_brand_header(total, pl, pl_pct, realized, unrealized):
     status = 'Supabase bağlı' if using_supabase() else 'Yerel test modu'
     now_txt = pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')
+    logo = bf_logo_html(78)
     st.markdown(f'''
     <div class="bf-topbar">
       <div class="bf-brand">
-        <div class="bf-logo">📈</div>
-        <div><div class="bf-title">Benim <span>Finans</span></div><div class="bf-subtitle">Akıllı yatırım takibi, net sonuçlar.</div></div>
+        {logo}
+        <div>
+          <div class="bf-title">Benim <span>Finans</span></div>
+          <div class="bf-subtitle">Akıllı yatırım takibi, net sonuçlar.</div>
+          <div class="bf-hero-badges">
+            <span class="bf-hero-badge">☁️ Cloud</span>
+            <span class="bf-hero-badge">🟢 {status}</span>
+            <span class="bf-hero-badge">⚡ Gerçek zamanlı fiyatlar</span>
+            <span class="bf-hero-badge">🔒 Kişisel portföy</span>
+          </div>
+        </div>
       </div>
       <div class="bf-status">
         <div class="bf-pill"><span class="bf-dot"></span>Sistem Aktif</div>
         <div class="bf-pill">🕘 Son güncelleme<br><b>{now_txt}</b></div>
-        <div class="bf-version">MyFin v6.8<br>Brand Update</div>
+        <div class="bf-version">MyFin v7.0<br>Brand Interface</div>
       </div>
     </div>
     <div class="bf-kpi-grid">
-      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Portföy Değeri</div><div class="bf-kpi-value">{tl(total)}</div><div class="bf-kpi-delta {'good' if pl>=0 else 'bad'}">▲ {pct(pl_pct)} ({tl(pl)})</div></div><div class="bf-icon">💼</div></div>
+      <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Portföy Değeri</div><div class="bf-kpi-value">{tl(total)}</div><div class="bf-kpi-delta {'good' if pl>=0 else 'bad'}">{pct(pl_pct)} ({tl(pl)})</div></div><div class="bf-icon">💼</div></div>
       <div class="bf-kpi"><div><div class="bf-kpi-label">Toplam Yatırım</div><div class="bf-kpi-value">{tl(max(total-pl,0))}</div><div class="bf-kpi-delta">{status}</div></div><div class="bf-icon gold">🪙</div></div>
       <div class="bf-kpi"><div><div class="bf-kpi-label">Bekleyen Kâr</div><div class="bf-kpi-value {'good' if unrealized>=0 else 'bad'}">{tl(unrealized)}</div><div class="bf-kpi-delta {'good' if unrealized>=0 else 'bad'}">📈 Portföyde bekleyen</div></div><div class="bf-icon green">↗</div></div>
       <div class="bf-kpi"><div><div class="bf-kpi-label">Satış Kârı</div><div class="bf-kpi-value {'good' if realized>=0 else 'bad'}">{tl(realized)}</div><div class="bf-kpi-delta">💵 Kesinleşen sonuç</div></div><div class="bf-icon purple">▮</div></div>
     </div>
+    <div class="bf-mobile-bottom">
+      <span><b>⌂</b>Ana</span><span><b>💼</b>Portföy</span><span><b>＋</b>İlk Alış</span><span><b>▤</b>İşlem</span><span><b>⚙</b>Ayarlar</span>
+    </div>
     ''', unsafe_allow_html=True)
-
 
 def tl(x):
     try: return f"{float(x):,.2f} TL".replace(',', 'X').replace('.', ',').replace('X','.')
@@ -149,15 +208,10 @@ if 'auto_price_refresh_done' not in st.session_state:
         st.warning(f'Otomatik fiyat yenileme tamamlanamadı: {e}')
 
 with st.sidebar:
-    st.markdown("<div class='bf-sidebar-brand'><div class='bf-sidebar-logo'>📈</div><div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v6.8</div></div></div>", unsafe_allow_html=True)
-    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📊 Kâr/Zarar','📈 Grafikler','🧾 Raporlar','⚙️ Ayarlar'], label_visibility='collapsed')
+    st.markdown(f"<div class='bf-sidebar-brand'>{bf_logo_html(42)}<div><div class='bf-sidebar-title'>Benim Finans</div><div class='bf-sidebar-sub'>MyFin v7.0</div></div></div>", unsafe_allow_html=True)
+    page=st.radio('Menü', ['🏠 Ana Sayfa','💼 Portföy','🛒 İlk Alış','📒 İşlem Defteri','📊 Analiz','⚙️ Ayarlar'], label_visibility='collapsed')
     st.divider()
-    if st.button('🔄 Fiyatları yenile', use_container_width=True, type='primary'):
-        with st.spinner('Fiyat kaynakları deneniyor...'):
-            res=refresh_all_prices()
-        st.success('Fiyat yenileme tamamlandı')
-        st.dataframe(res, use_container_width=True, hide_index=True)
-        st.rerun()
+    st.markdown("<div style='font-size:12px;color:#64748B;font-weight:800;line-height:1.6'>☁️ Supabase<br>🟢 Bağlı<br><br>Fiyat yenileme ana sayfadaki butondan yapılır.</div>", unsafe_allow_html=True)
 
 portfolio=build_portfolio()
 cat=category_summary()
@@ -448,7 +502,7 @@ elif page=='📒 İşlem Defteri':
             if st.button('İşlemi sil'):
                 delete_transaction(del_id); st.success('Silindi'); st.rerun()
 
-elif page=='📊 Kâr/Zarar':
+elif page=='📊 Analiz':
     st.header('📊 Kâr/Zarar Analizi')
     if not portfolio.empty:
         st.dataframe(money_cols(portfolio, ['Ort. Maliyet TL','Kalan Maliyet TL','Güncel Fiyat TL','Güncel Değer TL','Gerçekleşmiş K/Z TL','Gerçekleşmemiş K/Z TL','Toplam K/Z TL']), use_container_width=True, hide_index=True)
@@ -500,8 +554,8 @@ elif page=='⚙️ Ayarlar':
                 st.error(f'Bağlantı testi başarısız: {e}')
 
         st.subheader('ℹ️ Sürüm')
-        st.write('Benim Finans • MyFin • V6.8 Brand Update')
-        st.write('Bu sürümde beyaz modern marka arayüzü, mobil uyumlu kartlar ve sade menü yapısı kullanılır.')
+        st.write('Benim Finans • MyFin • V7.0 Brand Interface')
+        st.write('Bu sürümde yeni logo, beyaz/mavi marka arayüzü, sade hamburger menü hissi ve mobil uyumlu kart yapısı kullanılır.')
 
     with tab_duzen:
         st.subheader('✏️ Varlık adı, kategori ve manuel fiyat düzenle')
