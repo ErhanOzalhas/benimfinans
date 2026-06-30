@@ -164,29 +164,90 @@ elif page=='💼 Portföy':
             st.rerun()
     else:
         st.info('Henüz kayıtlı varlık yok.')
-
 elif page=='➕ Yeni Varlık':
-    st.header('➕ Yeni Varlık + Geçmiş Tarihli İlk Alış')
+    st.header('➕ Yeni Varlık / Geçmiş Tarihli Alış')
+
+    def otomatik_sembol(kategori, emtia):
+        e = emtia.strip().upper()
+
+        harita = {
+            "GRAM ALTIN": "GRAM_ALTIN",
+            "ALTIN": "GRAM_ALTIN",
+            "DOLAR": "USDTRY",
+            "USD": "USDTRY",
+            "EURO": "EURTRY",
+            "EUR": "EURTRY",
+            "STERLIN": "GBPTRY",
+            "GBP": "GBPTRY",
+        }
+
+        if e in harita:
+            return harita[e]
+
+        if kategori == "ABD Hisse":
+            return e if e.endswith(".US") else f"{e}.US"
+
+        return e
+
     with st.form('new_asset'):
-        c1,c2=st.columns(2)
-        name=c1.text_input('Varlık adı', placeholder='Euro, ASELS, Bitcoin')
-        symbol=c2.text_input('Sembol', placeholder='EUR, ASELS, BTC')
-        category=st.selectbox('Kategori', ['Altın','Döviz','BIST','ABD Hisse','Kripto','Fon','BES','Diğer'])
-        c3,c4,c5=st.columns(3)
-        qty=c3.number_input('Adet / Gram', min_value=0.0, value=0.0, step=0.01, format='%.6f')
-        buy_date=c4.date_input('Alış tarihi', value=date.today())
-        buy_price=c5.number_input('Alış fiyatı TL', min_value=0.0, value=0.0, step=0.01)
-        c6,c7=st.columns(2)
-        commission=c6.number_input('Komisyon TL', min_value=0.0, value=0.0, step=0.01)
-        manual_price=c7.number_input('Manuel güncel fiyat TL', min_value=0.0, value=0.0, step=0.01)
-        note=st.text_input('Not')
+        kategori = st.selectbox(
+            'Kategori',
+            ['Altın', 'Döviz', 'BIST Hisse', 'ABD Hisse', 'Kripto', 'Fon', 'BES', 'Diğer']
+        )
+
+        emtia = st.text_input(
+            'Emtia / Varlık',
+            placeholder='Gram Altın, Dolar, Euro, ASELS, RKLB'
+        )
+
+        alis_tarihi = st.date_input('Alış tarihi', value=date.today())
+
+        adet = st.number_input(
+            'Adet / Gram',
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            format='%.6f'
+        )
+
+        alis_fiyati = st.number_input(
+            'Alış fiyatı TL',
+            min_value=0.0,
+            value=0.0,
+            step=0.01
+        )
+
+        komisyon = st.number_input(
+            'Komisyon TL',
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            help='Alış işleminde maliyete eklenir. Satış işleminde satış gelirinden düşülür.'
+        )
+
+        manuel_fiyat = st.number_input(
+            'Manuel güncel fiyat TL',
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            help='Otomatik fiyat gelmezse yedek olarak kullanılır.'
+        )
+
+        not_alani = st.text_input('Not')
+
         if st.form_submit_button('✅ Kaydet', type='primary'):
-            if not name or not symbol:
-                st.error('Varlık adı ve sembol gerekli.')
+            if not emtia:
+                st.error('Emtia / varlık adı gerekli.')
+            elif adet <= 0:
+                st.error('Adet / gram 0’dan büyük olmalı.')
+            elif alis_fiyati <= 0:
+                st.error('Alış fiyatı girilmeli.')
             else:
-                sym=symbol.strip().upper(); add_asset(name, sym, category, manual_price_try=manual_price)
-                if qty>0: add_transaction(buy_date, sym, 'Alış', qty, buy_price, commission, note)
-                st.success('Varlık kaydedildi.'); st.rerun()
+                sembol = otomatik_sembol(kategori, emtia)
+                add_asset(emtia, sembol, kategori, manual_price_try=manuel_fiyat)
+                add_transaction(alis_tarihi, sembol, 'Alış', adet, alis_fiyati, komisyon, not_alani)
+                st.success(f'{emtia} kaydedildi. Otomatik sembol: {sembol}')
+                st.rerun()
 
 elif page=='💳 İşlemler':
     st.header('💳 İşlem Ekle ve Yönet')
