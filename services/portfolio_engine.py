@@ -18,12 +18,25 @@ def build_portfolio():
             if r['action'] in BUY_ACTIONS:
                 qty += q; cost += q*price + comm; total_buys += q*price + comm
             elif r['action'] in SELL_ACTIONS:
-                if qty>0:
-                    avg=cost/qty
-                    sold_cost=avg*q
-                    proceeds=q*price-comm
-                    realized += proceeds-sold_cost
-                    cost -= sold_cost; qty -= q; total_sells += proceeds
+
+    if qty <= 0:
+        continue
+
+    sell_qty = min(q, qty)
+
+    avg = cost / qty if qty else 0
+
+    sold_cost = avg * sell_qty
+
+    proceeds = sell_qty * price - comm
+
+    realized += proceeds - sold_cost
+
+    cost -= sold_cost
+
+    qty -= sell_qty
+
+    total_sells += proceeds
                 else:
                     realized += q*price-comm; total_sells += q*price-comm
             elif r['action']=='Temettü':
